@@ -1,0 +1,40 @@
+all-grouper:
+  name: All Grouper
+  description: A demonstration of a workflow with no grouping.
+  params:
+    workflow_details:
+      description: ""
+      name: Patrol & Event Report
+    er_client:
+      data_source:
+        name: apn
+    time_range:
+      timezone:
+        label: Africa/Nairobi
+        tzCode: EAT
+        name: Nairobi
+        utc: +03:00
+      since: "2025-12-10T07:57:00.000Z"
+      until: "2025-12-18T07:58:00.000Z"
+    get_template_path:
+      var: templates/individual_template.docx
+    outing_id:
+      var: "26"
+    patrol_and_events_params:
+      status:
+        - done
+        - active
+        - overdue
+        - cancelled
+    patrol_colormap:
+      input_column_name: extra__patrol_type__display
+      colormap: Set1
+      custom_colors: []
+    patrol_legend_title:
+      var: Legend
+    event_colormap:
+      input_column_name: event_type_display
+      colormap: Set1
+      custom_colors: []
+    event_legend_title:
+      var: Legend

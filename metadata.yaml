@@ -1,0 +1,15 @@
+name: Patrol & Event Report
+author:
+  name: ""
+  organization: APN
+  email: ""
+description: >
+  Per-outing patrol and event report for Argentina's national parks agency
+  (Administración de Parques Nacionales — APN). Filters EarthRanger patrol
+  and event data down to a single outing (by numero_patrulla), summarizes
+  patrol distance/duration/type, maps patrol tracks and events together, and
+  generates a Word (.docx) report combining the map, trajectory statistics,
+  event details, notes, and attachments.
+theory: ""
+output_comment: ""
+citation: ""
