@@ -292,6 +292,35 @@
     "events": {
       "additionalProperties": false,
       "properties": {
+        "event_states": {
+          "default": null,
+          "items": {
+            "type": "string",
+            "oneOf": [
+              {
+                "const": "new",
+                "title": "New"
+              },
+              {
+                "const": "active",
+                "title": "Active"
+              },
+              {
+                "const": "resolved",
+                "title": "Resolved"
+              },
+              {
+                "const": "review",
+                "title": "Review"
+              }
+            ]
+          },
+          "title": "Event State",
+          "type": "array",
+          "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
+          "uniqueItems": true,
+          "ecoscope:advanced": true
+        },
         "force_point_geometry": {
           "default": true,
           "title": "Force Point Geometry",
@@ -317,17 +346,58 @@
                 "done"
               ],
               "items": {
-                "enum": [
-                  "active",
-                  "overdue",
-                  "done",
-                  "cancelled"
-                ],
-                "type": "string"
+                "type": "string",
+                "oneOf": [
+                  {
+                    "const": "active",
+                    "title": "Active"
+                  },
+                  {
+                    "const": "overdue",
+                    "title": "Overdue"
+                  },
+                  {
+                    "const": "done",
+                    "title": "Done"
+                  },
+                  {
+                    "const": "cancelled",
+                    "title": "Cancelled"
+                  }
+                ]
               },
               "title": "Patrol Status",
               "type": "array",
               "description": "Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
+              "uniqueItems": true,
+              "ecoscope:advanced": true
+            },
+            "event_states": {
+              "default": null,
+              "items": {
+                "type": "string",
+                "oneOf": [
+                  {
+                    "const": "new",
+                    "title": "New"
+                  },
+                  {
+                    "const": "active",
+                    "title": "Active"
+                  },
+                  {
+                    "const": "resolved",
+                    "title": "Resolved"
+                  },
+                  {
+                    "const": "review",
+                    "title": "Review"
+                  }
+                ]
+              },
+              "title": "Event State",
+              "type": "array",
+              "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
               "uniqueItems": true,
               "ecoscope:advanced": true
             },
@@ -383,6 +453,27 @@
       "description": "",
       "ecoscope:task_group": true,
       "properties": {
+        "renamed_trajectory_stats": {
+          "additionalProperties": false,
+          "properties": {
+            "duplicate_strategy": {
+              "default": "suffix",
+              "enum": [
+                "suffix",
+                "skip",
+                "overwrite",
+                "error"
+              ],
+              "title": "Duplicate Strategy",
+              "type": "string",
+              "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
+              "ecoscope:advanced": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": ""
+        },
         "trajectory_stats_table": {
           "additionalProperties": false,
           "properties": {
@@ -1836,15 +1927,26 @@
         "timezone"
       ]
     },
+    "events": {
+      "ui:order": [
+        "event_states",
+        "force_point_geometry"
+      ]
+    },
     "Patrol and Event Types": {
       "patrol_and_events_params": {
         "ui:order": [
           "status",
+          "event_states",
           "patrols_overlap_daterange"
         ]
       }
     },
     "Trajectory Statistics": {
+      "ui:order": [
+        "renamed_trajectory_stats",
+        "trajectory_stats_table"
+      ],
       "trajectory_stats_table": {
         "ui:order": [
           "columns",
