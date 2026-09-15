@@ -690,6 +690,7 @@ workflow:
             extra__patrol_serial_number: ID de Patrulla
           retain_columns: null
           drop_columns: null
+          duplicate_strategy: suffix
 
       - id: trajectory_stats_table
         task: draw_table

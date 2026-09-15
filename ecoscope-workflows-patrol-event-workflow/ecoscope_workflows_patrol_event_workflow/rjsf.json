@@ -453,27 +453,6 @@
       "description": "",
       "ecoscope:task_group": true,
       "properties": {
-        "renamed_trajectory_stats": {
-          "additionalProperties": false,
-          "properties": {
-            "duplicate_strategy": {
-              "default": "suffix",
-              "enum": [
-                "suffix",
-                "skip",
-                "overwrite",
-                "error"
-              ],
-              "title": "Duplicate Strategy",
-              "type": "string",
-              "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
-              "ecoscope:advanced": true
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": ""
-        },
         "trajectory_stats_table": {
           "additionalProperties": false,
           "properties": {
@@ -1943,10 +1922,6 @@
       }
     },
     "Trajectory Statistics": {
-      "ui:order": [
-        "renamed_trajectory_stats",
-        "trajectory_stats_table"
-      ],
       "trajectory_stats_table": {
         "ui:order": [
           "columns",

@@ -748,6 +748,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             rename_columns={"extra__patrol_serial_number": "ID de Patrulla"},
             retain_columns=None,
             drop_columns=None,
+            duplicate_strategy="suffix",
             **(params.get("renamed_trajectory_stats") or {}),
         )
         .call()
