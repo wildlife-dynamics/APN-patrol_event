@@ -11,6 +11,10 @@ platforms = ['linux-64', 'osx-arm64', 'osx-64', 'win-64']
 [dependencies]
 wt-compiler = "==0.8.2"
 graphviz = "*"
+python = "<3.15"
+
+[pypi-dependencies]
+ruff = "*"
 
 [tasks.compile-patrol-event]
 cmd = './dev/recompile.sh --install'

@@ -6,7 +6,7 @@ requirements:
     channel: https://repo.prefix.dev/ecoscope-workflows/
 
   - name: ecoscope-workflows-ext-custom
-    version: "0.1.0rc23"
+    version: "0.1.3"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
   - name: pydeck
@@ -1043,6 +1043,15 @@ workflow:
       output_dir: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       use_index_as_id: false
 
+  # Some attachments (notably phone-camera photos) have EXIF python-docx's
+  # own image-header parser can't read; this fixes those up (or drops them)
+  # so generate_word_doc's InlineImage embedding doesn't silently skip them.
+  - id: sanitized_attachments
+    task: sanitize_attachments
+    partial:
+      paths: ${{ workflow.download_attachments.return }}
+      output_dir: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+
   - id: norm_template_path
     task: remove_file_scheme
     partial:
@@ -1068,7 +1077,7 @@ workflow:
           events: ${{ workflow.event_colormap.return }}
           notes: [] #${{ workflow.safe_notes.return }}
           user_details: ${{ workflow.user_details.return }}
-          attachments: ${{ workflow.download_attachments.return }}
+          attachments: ${{ workflow.sanitized_attachments.return }}
           template_path: ${{ workflow.norm_template_path.return }}
           output_dir: ${{ workflow.norm_output_dir.return }}
           mapa: ${{ workflow.patrol_event_map_to_png.return }}

@@ -115,6 +115,9 @@ from ecoscope_workflows_ext_custom.tasks.io import (
 from ecoscope_workflows_ext_custom.tasks.io import (
     remove_file_scheme as remove_file_scheme,
 )
+from ecoscope_workflows_ext_custom.tasks.io import (
+    sanitize_attachments as sanitize_attachments,
+)
 from ecoscope_workflows_ext_custom.tasks.localization import set_locale as set_locale
 from ecoscope_workflows_ext_custom.tasks.results import (
     create_spatial_features_layer as create_spatial_features_layer,
@@ -1631,6 +1634,27 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    sanitized_attachments = (
+        task(sanitize_attachments)
+        .validate()
+        .set_task_instance_id("sanitized_attachments")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            paths=download_attachments,
+            output_dir=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
+            **(params.get("sanitized_attachments") or {}),
+        )
+        .call()
+    )
+
     norm_template_path = (
         task(remove_file_scheme)
         .validate()
@@ -1690,7 +1714,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             events=event_colormap,
             notes=[],
             user_details=user_details,
-            attachments=download_attachments,
+            attachments=sanitized_attachments,
             template_path=norm_template_path,
             output_dir=norm_output_dir,
             mapa=patrol_event_map_to_png,

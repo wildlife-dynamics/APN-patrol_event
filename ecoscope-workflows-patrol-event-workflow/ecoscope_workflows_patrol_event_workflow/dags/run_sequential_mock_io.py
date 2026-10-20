@@ -150,6 +150,11 @@ download_event_attachments = create_func_magicmock(  # 🧪
     anchor="ecoscope_workflows_ext_custom.tasks.io",  # 🧪
     func_name="download_event_attachments",  # 🧪
 )  # 🧪
+
+sanitize_attachments = create_func_magicmock(  # 🧪
+    anchor="ecoscope_workflows_ext_custom.tasks.io",  # 🧪
+    func_name="sanitize_attachments",  # 🧪
+)  # 🧪
 from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope_workflows_ext_apn.tasks import (
     generate_patrol_report as generate_patrol_report,
@@ -1658,6 +1663,27 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    sanitized_attachments = (
+        task(sanitize_attachments)
+        # 🧪 validation omitted for mocked IO task (returns pre-loaded example data)
+        .set_task_instance_id("sanitized_attachments")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            paths=download_attachments,
+            output_dir=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
+            **(params.get("sanitized_attachments") or {}),
+        )
+        .call()
+    )
+
     norm_template_path = (
         task(remove_file_scheme)
         .validate()
@@ -1717,7 +1743,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             events=event_colormap,
             notes=[],
             user_details=user_details,
-            attachments=download_attachments,
+            attachments=sanitized_attachments,
             template_path=norm_template_path,
             output_dir=norm_output_dir,
             mapa=patrol_event_map_to_png,
