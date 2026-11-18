@@ -695,6 +695,27 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    trajectory_stats_local_times = (
+        task(convert_column_values_to_string)
+        .validate()
+        .set_task_instance_id("trajectory_stats_local_times")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=renamed_trajectory_stats,
+            columns=["Inicio", "Fin"],
+            **(params.get("trajectory_stats_local_times") or {}),
+        )
+        .call()
+    )
+
     trajectory_stats_table = (
         task(draw_table)
         .validate()
@@ -709,7 +730,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            dataframe=renamed_trajectory_stats,
+            dataframe=trajectory_stats_local_times,
             **(params.get("trajectory_stats_table") or {}),
         )
         .call()

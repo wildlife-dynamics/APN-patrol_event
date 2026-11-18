@@ -668,10 +668,19 @@ workflow:
           drop_columns: null
           duplicate_strategy: suffix
 
+      # draw_table serializes datetimes as UTC; keep them as local-time text instead
+      - id: trajectory_stats_local_times
+        task: convert_column_values_to_string
+        partial:
+          df: ${{ workflow.renamed_trajectory_stats.return }}
+          columns:
+            - Inicio
+            - Fin
+
       - id: trajectory_stats_table
         task: draw_table
         partial:
-          dataframe: ${{ workflow.renamed_trajectory_stats.return }}
+          dataframe: ${{ workflow.trajectory_stats_local_times.return }}
 
       - id: trajectory_stats_table_html
         task: persist_text
