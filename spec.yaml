@@ -14,12 +14,13 @@ requirements:
     channel: conda-forge
 
   - name: ecoscope-workflows-ext-apn
-    version: "0.0.30"
-    channel: https://repo.prefix.dev/ecoscope-workflows-custom/
+    version: "0.0.31.dev1+g295c311f7.d20261118"
+    channel: file:///tmp/ecoscope-workflows-custom/release/artifacts/
 
 rjsf-overrides:
   properties:
-    outing_id.properties.var.title: Outing ID
+    patrol_id.properties.var.title: ID de Patrulla
+    patrol_id.properties.var.description: "Número de serie de la patrulla en EarthRanger (por ejemplo 70)."
     get_template_path.properties.var.title: Template Path
     Patrol Style.properties.patrol_colormap.properties.input_column_name.title: Groupby
     Patrol Style.properties.patrol_colormap.properties.input_column_name.description: Color patrol tracks by the selected attribute. Each unique value is assigned a distinct color on the map.
@@ -467,8 +468,8 @@ workflow:
     partial:
       time_range: ${{ workflow.time_range.return }}
 
-  - name: Specify Outing ID
-    id: outing_id
+  - name: Specify Patrol ID
+    id: patrol_id
     task: set_string_var
 
   - name: Get Report Template Path
@@ -506,32 +507,6 @@ workflow:
       columns:
         - time
 
-  - name: Filter Patrol information by Outing ID
-    id: patrol_info_extraction
-    task: extract_using_str_accessor
-    partial:
-      df: ${{ workflow.convert_events_to_user_tz.return }}
-      column_name: event_details
-      key: numero_patrulla
-      value: ${{ workflow.outing_id.return }}
-
-  # explode patrol_segemnts of events to its individual rows
-  - name: Explode Patrol Info
-    id: explode_patrol_info
-    task: explode
-    partial:
-      df: ${{ workflow.patrol_info_extraction.return }}
-      column_name: "patrol_segments"
-      ignore_index: false
-
-  # Get list of patrol_segments
-  - name: Get Patrol Segments IDs
-    id: segment_ids
-    task: to_list
-    partial:
-      df: ${{ workflow.explode_patrol_info.return }}
-      column_name: patrol_segments
-
   - title: Patrol and Event Types
     type: task-group
     description: ""
@@ -554,10 +529,36 @@ workflow:
         partial:
           combined_params: ${{ workflow.patrol_and_events_params.return }}
 
+      # Scope everything downstream to the one ER patrol (serial number) chosen in the form
+      - id: prefetch_patrols_str
+        task: convert_column_values_to_string
+        partial:
+          df: ${{ workflow.prefetch_patrols.return }}
+          columns:
+            - serial_number
+
+      - name: Get Patrol by Serial Number
+        id: patrol_f
+        task: filter_df
+        partial:
+          df: ${{ workflow.prefetch_patrols_str.return }}
+          column_name: serial_number
+          op: equal
+          value: ${{ workflow.patrol_id.return }}
+          reset_index: false
+
+      # Patrol tasks downstream require serial_number as int64 again
+      - id: patrol_f_int
+        task: convert_column_values_to_numeric
+        partial:
+          df: ${{ workflow.patrol_f.return }}
+          columns:
+            - serial_number
+
       - id: patrol_observations
         task: get_patrol_observations_from_patrols_df_and_combined_params
         partial:
-          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          patrols_df: ${{ workflow.patrol_f_int.return }}
           combined_params: ${{ workflow.patrol_and_events_params.return }}
 
       - id: convert_patrols_to_user_timezone
@@ -573,7 +574,7 @@ workflow:
       - id: patrol_events
         task: unpack_events_from_patrols_df_and_combined_params
         partial:
-          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          patrols_df: ${{ workflow.patrol_f_int.return }}
           combined_params: ${{ workflow.patrol_and_events_params.return }}
 
       - id: convert_events_to_user_timezone
@@ -585,31 +586,6 @@ workflow:
             - time
             - patrol_start_time
 
-      # filter patrol events with patrol_segments_ids[found]
-      - name: Filterby Segment IDs
-        id: patrol_events_f
-        task: filter_row_values
-        partial:
-          df: ${{ workflow.convert_events_to_user_timezone.return }}
-          column: "patrol_segment_id"
-          values: ${{ workflow.segment_ids.return }}
-
-      # filter patrol observations with patrol_id[found]
-      - name: Get Patrol IDs
-        id: patrol_ids
-        task: to_list
-        partial:
-          df: ${{ workflow.patrol_events_f.return }}
-          column_name: patrol_id
-
-      - name: Filterby Segment IDs
-        id: patrol_observations_f
-        task: filter_row_values
-        partial:
-          df: ${{ workflow.convert_patrols_to_user_timezone.return }}
-          column: "patrol_id"
-          values: ${{ workflow.patrol_ids.return }}
-
   - title: ""
     type: task-group
     description: ""
@@ -618,7 +594,7 @@ workflow:
         id: patrol_relocations
         task: process_relocations
         partial:
-          observations: ${{ workflow.patrol_observations_f.return }}
+          observations: ${{ workflow.convert_patrols_to_user_timezone.return }}
           relocs_columns:
             - patrol_id
             - patrol_start_time
@@ -770,7 +746,7 @@ workflow:
       - id: events_ids
         task: to_list
         partial:
-          df: ${{ workflow.patrol_events_f.return }}
+          df: ${{ workflow.convert_events_to_user_timezone.return }}
           column_name: id
 
       - id: events_details
@@ -804,10 +780,17 @@ workflow:
         partial:
           event_gdf: ${{ workflow.mapped_events.return }}
 
+      # Patrol header from the patrol's own legs (segment/type forms) + cierre_de_patrulla event
       - id: patrol_info
-        task: get_patrol_info
+        task: get_patrol_segments_info
+        skipif:
+          conditions:
+            - never
         partial:
-          df: ${{ workflow.processed_events_details.return }}
+          client: ${{ workflow.er_client.return }}
+          patrols_df: ${{ workflow.patrol_f_int.return }}
+          events_df: ${{ workflow.processed_events_details.return }}
+          timezone: ${{ workflow.get_timezone.return }}
 
       # --- Event Notes ---
       - id: event_notes
@@ -881,6 +864,9 @@ workflow:
 
       - id: report_context
         task: prepare_patrol_report_context
+        skipif:
+          conditions:
+            - never
         partial:
           df: ${{ workflow.safe_events_and_notes.return }}
           patrol_info: ${{ workflow.patrol_info.return }}
@@ -979,12 +965,21 @@ workflow:
             - ${{ workflow.patrol_endpoint_layers.return }}
             - ${{ workflow.event_layer.return }}
 
-      - id: patrol_event_view_state
-        task: view_state_from_layers
+      # event_layer is skipped when the patrol has no linked events
+      - id: view_state_layers
+        task: collect_optional_layers
+        skipif:
+          conditions:
+            - never
         partial:
           layers:
             - ${{ workflow.patrol_tracks_layer.return }}
             - ${{ workflow.event_layer.return }}
+
+      - id: patrol_event_view_state
+        task: view_state_from_layers
+        partial:
+          layers: ${{ workflow.view_state_layers.return }}
           max_zoom: 20
 
       - name: Draw Patrol + Event Map
@@ -1068,9 +1063,12 @@ workflow:
     tasks:
       - id: generate_word_doc
         task: generate_patrol_report
+        skipif:
+          conditions:
+            - never
         partial:
           total_distance: ${{ workflow.total_distance_km.return}}
-          outing_id: ${{ workflow.outing_id.return }}
+          outing_id: ${{ workflow.patrol_id.return }}
           context: ${{ workflow.report_context.return }}
           trajs: ${{ workflow.patrol_trajectory.return }}
           trajs_stats: ${{workflow.renamed_trajectory_stats.return }}

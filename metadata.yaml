@@ -4,9 +4,10 @@ author:
   organization: APN
   email: ""
 description: >
-  Per-outing patrol and event report for Argentina's national parks agency
-  (Administración de Parques Nacionales — APN). Filters EarthRanger patrol
-  and event data down to a single outing (by numero_patrulla), summarizes
+  Per-patrol report for Argentina's national parks agency (Administración de
+  Parques Nacionales — APN). Filters EarthRanger patrol and event data down
+  to a single ER patrol (by serial number), reads the patrol's leg forms
+  (segment/type details) and any cierre_de_patrulla event, summarizes
   patrol distance/duration/type, maps patrol tracks and events together, and
   generates a Word (.docx) report combining the map, trajectory statistics,
   event details, notes, and attachments.

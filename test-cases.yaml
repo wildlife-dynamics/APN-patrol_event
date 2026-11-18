@@ -10,15 +10,15 @@ all-grouper:
         name: apn
     time_range:
       timezone:
-        label: Africa/Nairobi
-        tzCode: EAT
-        name: Nairobi
-        utc: +03:00
+        label: America/Argentina/Buenos_Aires
+        tzCode: ART
+        name: Buenos Aires
+        utc: "-03:00"
       since: "2025-12-10T07:57:00.000Z"
       until: "2025-12-18T07:58:00.000Z"
     get_template_path:
       var: templates/individual_template.docx
-    outing_id:
+    patrol_id:
       var: "26"
     patrol_and_events_params:
       status:

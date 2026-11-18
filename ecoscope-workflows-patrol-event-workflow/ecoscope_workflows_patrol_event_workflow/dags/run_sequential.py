@@ -63,9 +63,15 @@ from ecoscope.platform.tasks.skip import (
 from ecoscope.platform.tasks.skip import any_is_empty_df as any_is_empty_df
 from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import (
+    convert_column_values_to_numeric as convert_column_values_to_numeric,
+)
+from ecoscope.platform.tasks.transformation import (
+    convert_column_values_to_string as convert_column_values_to_string,
+)
+from ecoscope.platform.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
-from ecoscope.platform.tasks.transformation import explode as explode
+from ecoscope.platform.tasks.transformation import filter_df as filter_df
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
 from ecoscope.platform.tasks.transformation import with_unit as with_unit
 from ecoscope_workflows_ext_apn.tasks import (
@@ -82,9 +88,6 @@ from ecoscope_workflows_ext_apn.tasks import (
     create_patrol_endpoint_layers as create_patrol_endpoint_layers,
 )
 from ecoscope_workflows_ext_apn.tasks import ensure_dataframe as ensure_dataframe
-from ecoscope_workflows_ext_apn.tasks import (
-    extract_using_str_accessor as extract_using_str_accessor,
-)
 from ecoscope_workflows_ext_apn.tasks import fill_skipsentinel as fill_skipsentinel
 from ecoscope_workflows_ext_apn.tasks import (
     generate_patrol_report as generate_patrol_report,
@@ -93,7 +96,9 @@ from ecoscope_workflows_ext_apn.tasks import (
     get_event_categories as get_event_categories,
 )
 from ecoscope_workflows_ext_apn.tasks import get_eventnotes as get_eventnotes
-from ecoscope_workflows_ext_apn.tasks import get_patrol_info as get_patrol_info
+from ecoscope_workflows_ext_apn.tasks import (
+    get_patrol_segments_info as get_patrol_segments_info,
+)
 from ecoscope_workflows_ext_apn.tasks import get_user_me as get_user_me
 from ecoscope_workflows_ext_apn.tasks import (
     map_event_category_display as map_event_category_display,
@@ -260,10 +265,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    outing_id = (
+    patrol_id = (
         task(set_string_var)
         .validate()
-        .set_task_instance_id("outing_id")
+        .set_task_instance_id("patrol_id")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -273,7 +278,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("outing_id") or {}))
+        .partial(**(params.get("patrol_id") or {}))
         .call()
     )
 
@@ -354,72 +359,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    patrol_info_extraction = (
-        task(extract_using_str_accessor)
-        .validate()
-        .set_task_instance_id("patrol_info_extraction")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=convert_events_to_user_tz,
-            column_name="event_details",
-            key="numero_patrulla",
-            value=outing_id,
-            **(params.get("patrol_info_extraction") or {}),
-        )
-        .call()
-    )
-
-    explode_patrol_info = (
-        task(explode)
-        .validate()
-        .set_task_instance_id("explode_patrol_info")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=patrol_info_extraction,
-            column_name="patrol_segments",
-            ignore_index=False,
-            **(params.get("explode_patrol_info") or {}),
-        )
-        .call()
-    )
-
-    segment_ids = (
-        task(to_list)
-        .validate()
-        .set_task_instance_id("segment_ids")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=explode_patrol_info,
-            column_name="patrol_segments",
-            **(params.get("segment_ids") or {}),
-        )
-        .call()
-    )
-
     patrol_and_events_params = (
         task(set_patrols_and_patrol_events_params)
         .validate()
@@ -468,6 +407,70 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    prefetch_patrols_str = (
+        task(convert_column_values_to_string)
+        .validate()
+        .set_task_instance_id("prefetch_patrols_str")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=prefetch_patrols,
+            columns=["serial_number"],
+            **(params.get("prefetch_patrols_str") or {}),
+        )
+        .call()
+    )
+
+    patrol_f = (
+        task(filter_df)
+        .validate()
+        .set_task_instance_id("patrol_f")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=prefetch_patrols_str,
+            column_name="serial_number",
+            op="equal",
+            value=patrol_id,
+            reset_index=False,
+            **(params.get("patrol_f") or {}),
+        )
+        .call()
+    )
+
+    patrol_f_int = (
+        task(convert_column_values_to_numeric)
+        .validate()
+        .set_task_instance_id("patrol_f_int")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=patrol_f, columns=["serial_number"], **(params.get("patrol_f_int") or {})
+        )
+        .call()
+    )
+
     patrol_observations = (
         task(get_patrol_observations_from_patrols_df_and_combined_params)
         .validate()
@@ -482,7 +485,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            patrols_df=prefetch_patrols,
+            patrols_df=patrol_f_int,
             combined_params=patrol_and_events_params,
             **(params.get("patrol_observations") or {}),
         )
@@ -525,7 +528,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            patrols_df=prefetch_patrols,
+            patrols_df=patrol_f_int,
             combined_params=patrol_and_events_params,
             **(params.get("patrol_events") or {}),
         )
@@ -554,71 +557,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    patrol_events_f = (
-        task(filter_row_values)
-        .validate()
-        .set_task_instance_id("patrol_events_f")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=convert_events_to_user_timezone,
-            column="patrol_segment_id",
-            values=segment_ids,
-            **(params.get("patrol_events_f") or {}),
-        )
-        .call()
-    )
-
-    patrol_ids = (
-        task(to_list)
-        .validate()
-        .set_task_instance_id("patrol_ids")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=patrol_events_f,
-            column_name="patrol_id",
-            **(params.get("patrol_ids") or {}),
-        )
-        .call()
-    )
-
-    patrol_observations_f = (
-        task(filter_row_values)
-        .validate()
-        .set_task_instance_id("patrol_observations_f")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=convert_patrols_to_user_timezone,
-            column="patrol_id",
-            values=patrol_ids,
-            **(params.get("patrol_observations_f") or {}),
-        )
-        .call()
-    )
-
     patrol_relocations = (
         task(process_relocations)
         .validate()
@@ -633,7 +571,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            observations=patrol_observations_f,
+            observations=convert_patrols_to_user_timezone,
             relocs_columns=[
                 "patrol_id",
                 "patrol_start_time",
@@ -939,7 +877,9 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=patrol_events_f, column_name="id", **(params.get("events_ids") or {})
+            df=convert_events_to_user_timezone,
+            column_name="id",
+            **(params.get("events_ids") or {}),
         )
         .call()
     )
@@ -1045,19 +985,24 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     patrol_info = (
-        task(get_patrol_info)
+        task(get_patrol_segments_info)
         .validate()
         .set_task_instance_id("patrol_info")
         .handle_errors()
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
+                never,
             ],
             unpack_depth=1,
         )
-        .partial(df=processed_events_details, **(params.get("patrol_info") or {}))
+        .partial(
+            client=er_client,
+            patrols_df=patrol_f_int,
+            events_df=processed_events_details,
+            timezone=get_timezone,
+            **(params.get("patrol_info") or {}),
+        )
         .call()
     )
 
@@ -1227,8 +1172,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
+                never,
             ],
             unpack_depth=1,
         )
@@ -1480,6 +1424,25 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    view_state_layers = (
+        task(collect_optional_layers)
+        .validate()
+        .set_task_instance_id("view_state_layers")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            layers=[patrol_tracks_layer, event_layer],
+            **(params.get("view_state_layers") or {}),
+        )
+        .call()
+    )
+
     patrol_event_view_state = (
         task(view_state_from_layers)
         .validate()
@@ -1494,7 +1457,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            layers=[patrol_tracks_layer, event_layer],
+            layers=view_state_layers,
             max_zoom=20,
             **(params.get("patrol_event_view_state") or {}),
         )
@@ -1700,14 +1663,13 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .with_tracing()
         .skipif(
             conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
+                never,
             ],
             unpack_depth=1,
         )
         .partial(
             total_distance=total_distance_km,
-            outing_id=outing_id,
+            outing_id=patrol_id,
             context=report_context,
             trajs=patrol_trajectory,
             trajs_stats=renamed_trajectory_stats,

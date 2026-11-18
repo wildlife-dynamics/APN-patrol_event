@@ -25,8 +25,8 @@
       "properties": {
         "data_source": {
           "$ref": "#/$defs/EarthRangerConnection",
-          "title": "",
-          "description": "Select one of your configured data sources."
+          "description": "Select one of your configured data sources.",
+          "title": ""
         }
       },
       "required": [
@@ -53,8 +53,9 @@
               "min_zoom": 0
             }
           ],
+          "description": "Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
+          "ecoscope:advanced": true,
           "items": {
-            "title": "Base Layer",
             "anyOf": [
               {
                 "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
@@ -72,8 +73,8 @@
                     "default": 1,
                     "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
                     "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
+                    "maximum": 1,
+                    "minimum": 0,
                     "title": "Layer Opacity",
                     "type": "number"
                   }
@@ -97,8 +98,8 @@
                     "default": 1,
                     "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
                     "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
+                    "maximum": 1,
+                    "minimum": 0,
                     "title": "Layer Opacity",
                     "type": "number"
                   }
@@ -122,8 +123,8 @@
                     "default": 1,
                     "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
                     "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
+                    "maximum": 1,
+                    "minimum": 0,
                     "title": "Layer Opacity",
                     "type": "number"
                   }
@@ -147,8 +148,8 @@
                     "default": 1,
                     "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
                     "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
+                    "maximum": 1,
+                    "minimum": 0,
                     "title": "Layer Opacity",
                     "type": "number"
                   }
@@ -172,8 +173,8 @@
                     "default": 1,
                     "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
                     "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
+                    "maximum": 1,
+                    "minimum": 0,
                     "title": "Layer Opacity",
                     "type": "number"
                   }
@@ -195,8 +196,8 @@
                     "default": 1,
                     "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
                     "ecoscope:advanced": true,
-                    "maximum": 1.0,
-                    "minimum": 0.0,
+                    "maximum": 1,
+                    "minimum": 0,
                     "title": "Custom Layer Opacity",
                     "type": "number"
                   },
@@ -216,12 +217,11 @@
                 "title": "Custom Layer (Advanced)",
                 "type": "object"
               }
-            ]
+            ],
+            "title": "Base Layer"
           },
           "title": " ",
-          "type": "array",
-          "description": "Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
-          "ecoscope:advanced": true
+          "type": "array"
         }
       },
       "type": "object",
@@ -232,23 +232,19 @@
       "additionalProperties": false,
       "properties": {
         "since": {
+          "description": "The start time",
           "format": "date-time",
           "title": "Since",
-          "type": "string",
-          "description": "The start time"
+          "type": "string"
         },
         "until": {
+          "description": "The end time",
           "format": "date-time",
           "title": "Until",
-          "type": "string",
-          "description": "The end time"
+          "type": "string"
         },
         "timezone": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/TimezoneInfo"
-            }
-          ],
+          "$ref": "#/$defs/TimezoneInfo",
           "default": null,
           "title": "Timezone"
         }
@@ -261,19 +257,20 @@
       "description": "Choose the period of time to analyze.",
       "title": "Time Range"
     },
-    "outing_id": {
+    "patrol_id": {
       "additionalProperties": false,
       "properties": {
         "var": {
-          "title": "Outing ID",
-          "type": "string"
+          "title": "ID de Patrulla",
+          "type": "string",
+          "description": "N\u00famero de serie de la patrulla en EarthRanger (por ejemplo 70)."
         }
       },
       "required": [
         "var"
       ],
       "type": "object",
-      "title": "Specify Outing ID"
+      "title": "Specify Patrol ID"
     },
     "get_template_path": {
       "additionalProperties": false,
@@ -294,6 +291,8 @@
       "properties": {
         "event_states": {
           "default": null,
+          "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
+          "ecoscope:advanced": true,
           "items": {
             "type": "string",
             "oneOf": [
@@ -317,16 +316,14 @@
           },
           "title": "Event State",
           "type": "array",
-          "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
-          "uniqueItems": true,
-          "ecoscope:advanced": true
+          "uniqueItems": true
         },
         "force_point_geometry": {
           "default": true,
-          "title": "Force Point Geometry",
-          "type": "boolean",
           "description": "If True, polygon/multipolygon event geometries are reduced to their centroid. Set False to preserve native geometry types.",
-          "ecoscope:advanced": true
+          "ecoscope:advanced": true,
+          "title": "Force Point Geometry",
+          "type": "boolean"
         }
       },
       "required": [],
@@ -345,6 +342,8 @@
               "default": [
                 "done"
               ],
+              "description": "Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
+              "ecoscope:advanced": true,
               "items": {
                 "type": "string",
                 "oneOf": [
@@ -368,12 +367,12 @@
               },
               "title": "Patrol Status",
               "type": "array",
-              "description": "Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
-              "uniqueItems": true,
-              "ecoscope:advanced": true
+              "uniqueItems": true
             },
             "event_states": {
               "default": null,
+              "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
+              "ecoscope:advanced": true,
               "items": {
                 "type": "string",
                 "oneOf": [
@@ -397,16 +396,14 @@
               },
               "title": "Event State",
               "type": "array",
-              "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
-              "uniqueItems": true,
-              "ecoscope:advanced": true
+              "uniqueItems": true
             },
             "patrols_overlap_daterange": {
               "default": true,
-              "title": "Patrols Overlap Daterange",
-              "type": "boolean",
               "description": "Whether or not to include patrols that start or end outside of the time range",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "Patrols Overlap Daterange",
+              "type": "boolean"
             }
           },
           "required": [],
@@ -424,11 +421,7 @@
           "additionalProperties": false,
           "properties": {
             "trajectory_segment_filter": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/TrajectorySegmentFilter"
-                }
-              ],
+              "$ref": "#/$defs/TrajectorySegmentFilter",
               "default": {
                 "min_length_meters": 0.001,
                 "max_length_meters": 100000,
@@ -437,9 +430,9 @@
                 "min_speed_kmhr": 0.01,
                 "max_speed_kmhr": 500
               },
-              "title": " ",
               "description": "Filter track data by setting limits on track segment length, duration, and speed. Segments outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": " "
             }
           },
           "required": [],
@@ -458,24 +451,20 @@
           "properties": {
             "columns": {
               "default": null,
+              "description": "The list of dataframe columns to render in the table. Leave empty to render all columns",
+              "ecoscope:advanced": true,
               "items": {
                 "type": "string"
               },
               "title": "Columns",
-              "type": "array",
-              "description": "The list of dataframe columns to render in the table. Leave empty to render all columns",
-              "ecoscope:advanced": true
+              "type": "array"
             },
             "table_config": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/TableConfig"
-                }
-              ],
+              "$ref": "#/$defs/TableConfig",
               "default": null,
-              "title": "Table Config",
               "description": "Configuration options for the table.",
               "ecoscope:advanced": true,
+              "title": "Table Config",
               "properties": {
                 "enable_sorting": {
                   "default": true
@@ -504,11 +493,7 @@
           "additionalProperties": false,
           "properties": {
             "source": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/EarthRangerSource"
-                }
-              ],
+              "$ref": "#/$defs/EarthRangerSource",
               "default": {
                 "query": null
               },
@@ -516,9 +501,8 @@
             },
             "group_by": {
               "default": "type_name",
-              "title": "Group By",
-              "type": "string",
               "description": "Column used to group features in the map legend e.g. 'Feature Type' shows one legend entry per feature type.",
+              "ecoscope:advanced": true,
               "oneOf": [
                 {
                   "const": "type_name",
@@ -529,31 +513,32 @@
                   "title": "Feature Name"
                 }
               ],
-              "ecoscope:advanced": true
+              "title": "Group By",
+              "type": "string"
             },
             "legend_title": {
               "default": "",
-              "title": "Legend Title",
-              "type": "string",
               "description": "Label shown in the map legend e.g. 'Park Boundary'.",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "Legend Title",
+              "type": "string"
             },
             "show_labels": {
               "default": false,
-              "title": "Show Labels",
-              "type": "boolean",
               "description": "If True, show each feature's name as a text label on the map.",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "Show Labels",
+              "type": "boolean"
             },
             "label_style": {
               "default": [],
+              "ecoscope:advanced": true,
               "items": {
                 "$ref": "#/$defs/LabelStyle"
               },
               "maxItems": 1,
               "title": "",
-              "type": "array",
-              "ecoscope:advanced": true
+              "type": "array"
             }
           },
           "required": [],
@@ -572,42 +557,42 @@
           "properties": {
             "file_path": {
               "default": "",
-              "title": "File Path",
-              "type": "string",
               "description": "Path to the geospatial file. Supported formats: GeoJSON (.geojson), GeoPackage (.gpkg), and GeoParquet (.parquet / .geoparquet).",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "File Path",
+              "type": "string"
             },
             "layer": {
               "default": "",
-              "title": "Layer",
-              "type": "string",
               "description": "Layer name within a GeoPackage file. Only required when the file contains multiple layers.",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "Layer",
+              "type": "string"
             },
             "group_by": {
               "default": "",
-              "title": "Group By",
-              "type": "string",
               "description": "Column used to group features in the map legend e.g. 'name', 'category'.",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "Group By",
+              "type": "string"
             },
             "legend_title": {
               "default": "",
-              "title": "Legend Title",
-              "type": "string",
               "description": "Label shown in the map legend e.g. 'Park Boundary'.",
-              "ecoscope:advanced": true
+              "ecoscope:advanced": true,
+              "title": "Legend Title",
+              "type": "string"
             },
             "style": {
               "default": null,
+              "description": "Optional: Customise how features are rendered on the map.",
+              "ecoscope:advanced": true,
               "items": {
                 "$ref": "#/$defs/LayerStyle"
               },
               "maxLength": 1,
               "title": "Style",
-              "type": "array",
-              "description": "Optional: Customise how features are rendered on the map.",
-              "ecoscope:advanced": true
+              "type": "array"
             }
           },
           "type": "object",
@@ -625,9 +610,9 @@
           "additionalProperties": false,
           "properties": {
             "input_column_name": {
+              "description": "Color patrol tracks by the selected attribute. Each unique value is assigned a distinct color on the map.",
               "title": "Groupby",
               "type": "string",
-              "description": "Color patrol tracks by the selected attribute. Each unique value is assigned a distinct color on the map.",
               "default": "extra__patrol_type__display",
               "ecoscope:advanced": false,
               "oneOf": [
@@ -650,23 +635,20 @@
               ]
             },
             "colormap": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/QualitativeColormap"
-                }
-              ],
+              "$ref": "#/$defs/QualitativeColormap",
               "default": "Set1",
-              "title": "Palette",
               "description": "Choose a color palette. For low-cardinality data (e.g. patrol type) any palette works; for high-cardinality data (e.g. IDs) use tab20, tab20b, or tab20c to reduce color repetition.",
+              "title": "Palette",
               "ecoscope:advanced": false
             },
             "custom_colors": {
+              "default": [],
+              "description": "Leave empty to use the palette above. When provided, these colors are applied instead.",
               "items": {
                 "type": "string"
               },
               "title": "Custom Colors",
               "type": "array",
-              "description": "Leave empty to use the palette above. When provided, these colors are applied instead.",
               "ecoscope:advanced": false
             }
           },
@@ -697,11 +679,7 @@
           "additionalProperties": false,
           "properties": {
             "layer_style": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/PathLayerStyle"
-                }
-              ],
+              "$ref": "#/$defs/PathLayerStyle",
               "default": {
                 "auto_highlight": false,
                 "opacity": 1,
@@ -717,9 +695,9 @@
                 "joint_rounded": false,
                 "billboard": false
               },
-              "title": "Layer Style",
               "description": "",
               "ecoscope:advanced": true,
+              "title": "Layer Style",
               "properties": {
                 "auto_highlight": {
                   "type": "boolean",
@@ -857,13 +835,13 @@
                 "extra__patrol_start_time",
                 "extra__patrol_end_time"
               ],
+              "description": "Restrict the on-hover tooltip to these column names. None (default) shows all properties.",
+              "ecoscope:advanced": true,
               "items": {
                 "type": "string"
               },
               "title": "Tooltip Columns",
-              "type": "array",
-              "description": "Restrict the on-hover tooltip to these column names. None (default) shows all properties.",
-              "ecoscope:advanced": true
+              "type": "array"
             }
           },
           "type": "object",
@@ -882,64 +860,75 @@
           "properties": {
             "include_markers": {
               "default": true,
+              "description": "Include patrol start/end markers on the map.",
               "title": "Include Start/End Markers",
               "type": "boolean",
               "ecoscope:advanced": false
             },
             "start_color": {
               "default": "#22c55e",
+              "description": "Hex color for patrol start markers.",
               "title": "Start Marker Color",
               "type": "string",
               "ecoscope:advanced": false
             },
             "end_color": {
               "default": "#ef4444",
+              "description": "Hex color for patrol end markers.",
               "title": "End Marker Color",
               "type": "string",
               "ecoscope:advanced": false
             },
             "radius": {
               "default": 4,
+              "description": "Marker radius in pixels.",
               "title": "Marker Size (px)",
               "type": "number",
               "ecoscope:advanced": false
             },
             "legend_title": {
               "default": "Patrol Markers",
+              "description": "Legend title for patrol markers.",
               "title": "Legend Title",
               "type": "string",
               "ecoscope:advanced": false
             },
             "start_label": {
               "default": "Patrol Start",
+              "description": "Legend label for patrol start markers.",
               "title": "Start Label",
               "type": "string"
             },
             "end_label": {
               "default": "Patrol End",
+              "description": "Legend label for patrol end markers.",
               "title": "End Label",
               "type": "string"
             },
             "stroked": {
               "default": true,
+              "description": "Draw an outline around each marker.",
               "title": "Stroked",
               "type": "boolean",
               "ecoscope:advanced": true
             },
             "filled": {
               "default": true,
+              "description": "Fill markers with color.",
               "title": "Filled",
               "type": "boolean",
               "ecoscope:advanced": true
             },
             "line_color": {
               "default": "#ffffff",
+              "description": "Hex color for marker outlines.",
               "title": "Outline Color",
               "type": "string",
               "ecoscope:advanced": true
             },
             "line_width": {
               "default": 2,
+              "description": "Outline width in pixels.",
               "title": "Outline Width (px)",
               "type": "number",
               "ecoscope:advanced": true
@@ -960,9 +949,9 @@
           "additionalProperties": false,
           "properties": {
             "input_column_name": {
+              "description": "Color events by the selected attribute. Each unique value is assigned a distinct color on the map.",
               "title": "Groupby",
               "type": "string",
-              "description": "Color events by the selected attribute. Each unique value is assigned a distinct color on the map.",
               "default": "event_type_display",
               "ecoscope:advanced": false,
               "oneOf": [
@@ -981,23 +970,20 @@
               ]
             },
             "colormap": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/QualitativeColormap"
-                }
-              ],
+              "$ref": "#/$defs/QualitativeColormap",
               "default": "Set1",
-              "title": "Palette",
               "description": "Choose a color palette. For low-cardinality data (e.g. event type) any palette works; for high-cardinality data (e.g. IDs) use tab20, tab20b, or tab20c to reduce color repetition.",
+              "title": "Palette",
               "ecoscope:advanced": false
             },
             "custom_colors": {
+              "default": [],
+              "description": "Leave empty to use the palette above. When provided, these colors are applied instead.",
               "items": {
                 "type": "string"
               },
               "title": "Custom Colors",
               "type": "array",
-              "description": "Leave empty to use the palette above. When provided, these colors are applied instead.",
               "ecoscope:advanced": false
             }
           },
@@ -1028,11 +1014,7 @@
           "additionalProperties": false,
           "properties": {
             "layer_style": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/ScatterplotLayerStyle"
-                }
-              ],
+              "$ref": "#/$defs/ScatterplotLayerStyle",
               "default": {
                 "auto_highlight": false,
                 "opacity": 1,
@@ -1056,9 +1038,9 @@
                 "elevation_scale": 1,
                 "billboard": false
               },
-              "title": "Layer Style",
               "description": "",
               "ecoscope:advanced": true,
+              "title": "Layer Style",
               "properties": {
                 "auto_highlight": {
                   "type": "boolean",
@@ -1240,13 +1222,13 @@
                 "event_category",
                 "time"
               ],
+              "description": "Restrict the on-hover tooltip to these column names. None (default) shows all properties.",
+              "ecoscope:advanced": true,
               "items": {
                 "type": "string"
               },
               "title": "Tooltip Columns",
-              "type": "array",
-              "description": "Restrict the on-hover tooltip to these column names. None (default) shows all properties.",
-              "ecoscope:advanced": true
+              "type": "array"
             }
           },
           "type": "object",
@@ -1260,16 +1242,16 @@
       "properties": {
         "attachments_subdir": {
           "default": "attachments",
-          "title": "Attachments Subdirectory",
-          "type": "string",
           "description": "Subdirectory inside the output directory to store attachments.",
-          "ecoscope:advanced": true
+          "ecoscope:advanced": true,
+          "title": "Attachments Subdirectory",
+          "type": "string"
         },
         "skip_download": {
           "default": false,
+          "description": "If True, skip downloading attachments.",
           "title": "Skip Download",
-          "type": "boolean",
-          "description": "If True, skip downloading attachments."
+          "type": "boolean"
         }
       },
       "required": [],
@@ -1286,9 +1268,9 @@
           "properties": {
             "include_attachment": {
               "default": false,
+              "description": "Whether to include the event attachment in the report.",
               "title": "Include Attachment",
-              "type": "boolean",
-              "description": "Whether to include the event attachment in the report."
+              "type": "boolean"
             }
           },
           "required": [],
@@ -1718,8 +1700,8 @@
         "opacity": {
           "default": 1,
           "ecoscope:advanced": true,
-          "maximum": 1.0,
-          "minimum": 0.0,
+          "maximum": 1,
+          "minimum": 0,
           "title": "Opacity",
           "type": "number"
         },
@@ -1816,8 +1798,8 @@
         "opacity": {
           "default": 1,
           "ecoscope:advanced": true,
-          "maximum": 1.0,
-          "minimum": 0.0,
+          "maximum": 1,
+          "minimum": 0,
           "title": "Opacity",
           "type": "number"
         },
@@ -2145,7 +2127,7 @@
       "er_client",
       "base_maps",
       "time_range",
-      "outing_id",
+      "patrol_id",
       "get_template_path",
       "events",
       "Patrol and Event Types",
