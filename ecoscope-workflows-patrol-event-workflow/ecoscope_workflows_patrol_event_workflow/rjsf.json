@@ -270,14 +270,17 @@
         "var"
       ],
       "type": "object",
-      "title": "Specify Patrol ID"
+      "title": "ID de Patrulla"
     },
     "get_template_path": {
       "additionalProperties": false,
       "properties": {
         "var": {
           "title": "Template Path",
-          "type": "string"
+          "type": "string",
+          "description": "Path or URL to the .docx Jinja template used for the patrol report.",
+          "default": "https://raw.githubusercontent.com/wildlife-dynamics/APN-patrol_event/main/resources/templates/apn_patrol_events_template.docx",
+          "ecoscope:advanced": true
         }
       },
       "required": [
@@ -285,204 +288,6 @@
       ],
       "type": "object",
       "title": "Get Report Template Path"
-    },
-    "events": {
-      "additionalProperties": false,
-      "properties": {
-        "event_states": {
-          "default": null,
-          "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
-          "ecoscope:advanced": true,
-          "items": {
-            "type": "string",
-            "oneOf": [
-              {
-                "const": "new",
-                "title": "New"
-              },
-              {
-                "const": "active",
-                "title": "Active"
-              },
-              {
-                "const": "resolved",
-                "title": "Resolved"
-              },
-              {
-                "const": "review",
-                "title": "Review"
-              }
-            ]
-          },
-          "title": "Event State",
-          "type": "array",
-          "uniqueItems": true
-        },
-        "force_point_geometry": {
-          "default": true,
-          "description": "If True, polygon/multipolygon event geometries are reduced to their centroid. Set False to preserve native geometry types.",
-          "ecoscope:advanced": true,
-          "title": "Force Point Geometry",
-          "type": "boolean"
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Get Events"
-    },
-    "Patrol and Event Types": {
-      "type": "object",
-      "description": "",
-      "ecoscope:task_group": true,
-      "properties": {
-        "patrol_and_events_params": {
-          "additionalProperties": false,
-          "properties": {
-            "status": {
-              "default": [
-                "done"
-              ],
-              "description": "Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
-              "ecoscope:advanced": true,
-              "items": {
-                "type": "string",
-                "oneOf": [
-                  {
-                    "const": "active",
-                    "title": "Active"
-                  },
-                  {
-                    "const": "overdue",
-                    "title": "Overdue"
-                  },
-                  {
-                    "const": "done",
-                    "title": "Done"
-                  },
-                  {
-                    "const": "cancelled",
-                    "title": "Cancelled"
-                  }
-                ]
-              },
-              "title": "Patrol Status",
-              "type": "array",
-              "uniqueItems": true
-            },
-            "event_states": {
-              "default": null,
-              "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
-              "ecoscope:advanced": true,
-              "items": {
-                "type": "string",
-                "oneOf": [
-                  {
-                    "const": "new",
-                    "title": "New"
-                  },
-                  {
-                    "const": "active",
-                    "title": "Active"
-                  },
-                  {
-                    "const": "resolved",
-                    "title": "Resolved"
-                  },
-                  {
-                    "const": "review",
-                    "title": "Review"
-                  }
-                ]
-              },
-              "title": "Event State",
-              "type": "array",
-              "uniqueItems": true
-            },
-            "patrols_overlap_daterange": {
-              "default": true,
-              "description": "Whether or not to include patrols that start or end outside of the time range",
-              "ecoscope:advanced": true,
-              "title": "Patrols Overlap Daterange",
-              "type": "boolean"
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": ""
-        }
-      }
-    },
-    "": {
-      "type": "object",
-      "description": "",
-      "ecoscope:task_group": true,
-      "properties": {
-        "patrol_trajectory": {
-          "additionalProperties": false,
-          "properties": {
-            "trajectory_segment_filter": {
-              "$ref": "#/$defs/TrajectorySegmentFilter",
-              "default": {
-                "min_length_meters": 0.001,
-                "max_length_meters": 100000,
-                "min_time_secs": 1,
-                "max_time_secs": 172800,
-                "min_speed_kmhr": 0.01,
-                "max_speed_kmhr": 500
-              },
-              "description": "Filter track data by setting limits on track segment length, duration, and speed. Segments outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
-              "ecoscope:advanced": true,
-              "title": " "
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Patrol Trajectory"
-        }
-      }
-    },
-    "Trajectory Statistics": {
-      "type": "object",
-      "description": "",
-      "ecoscope:task_group": true,
-      "properties": {
-        "trajectory_stats_table": {
-          "additionalProperties": false,
-          "properties": {
-            "columns": {
-              "default": null,
-              "description": "The list of dataframe columns to render in the table. Leave empty to render all columns",
-              "ecoscope:advanced": true,
-              "items": {
-                "type": "string"
-              },
-              "title": "Columns",
-              "type": "array"
-            },
-            "table_config": {
-              "$ref": "#/$defs/TableConfig",
-              "default": null,
-              "description": "Configuration options for the table.",
-              "ecoscope:advanced": true,
-              "title": "Table Config",
-              "properties": {
-                "enable_sorting": {
-                  "default": true
-                },
-                "enable_filtering": {
-                  "default": true
-                },
-                "enable_download": {
-                  "default": true
-                }
-              }
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": ""
-        }
-      }
     },
     "Spatial Features": {
       "type": "object",
@@ -1257,27 +1062,6 @@
       "required": [],
       "type": "object",
       "title": "Download Attachments"
-    },
-    "Patrol & Events Report": {
-      "type": "object",
-      "description": "",
-      "ecoscope:task_group": true,
-      "properties": {
-        "generate_word_doc": {
-          "additionalProperties": false,
-          "properties": {
-            "include_attachment": {
-              "default": false,
-              "description": "Whether to include the event attachment in the report.",
-              "title": "Include Attachment",
-              "type": "boolean"
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": ""
-        }
-      }
     }
   },
   "$defs": {
@@ -1320,80 +1104,6 @@
         "utc"
       ],
       "title": "TimezoneInfo",
-      "type": "object"
-    },
-    "TrajectorySegmentFilter": {
-      "properties": {
-        "min_length_meters": {
-          "default": 0.001,
-          "ecoscope:advanced": true,
-          "minimum": 0.001,
-          "title": "Minimum Segment Length (Meters)",
-          "type": "number"
-        },
-        "max_length_meters": {
-          "default": 100000,
-          "ecoscope:advanced": true,
-          "exclusiveMinimum": 0.001,
-          "title": "Maximum Segment Length (Meters)",
-          "type": "number"
-        },
-        "min_time_secs": {
-          "default": 1,
-          "ecoscope:advanced": true,
-          "minimum": 1,
-          "title": "Minimum Segment Duration (Seconds)",
-          "type": "number"
-        },
-        "max_time_secs": {
-          "default": 172800,
-          "ecoscope:advanced": true,
-          "exclusiveMinimum": 1,
-          "title": "Maximum Segment Duration (Seconds)",
-          "type": "number"
-        },
-        "min_speed_kmhr": {
-          "default": 0.01,
-          "ecoscope:advanced": true,
-          "exclusiveMinimum": 0.001,
-          "title": "Minimum Segment Speed (Kilometers per Hour)",
-          "type": "number"
-        },
-        "max_speed_kmhr": {
-          "default": 500,
-          "ecoscope:advanced": true,
-          "exclusiveMinimum": 0.001,
-          "title": "Maximum Segment Speed (Kilometers per Hour)",
-          "type": "number"
-        }
-      },
-      "title": "TrajectorySegmentFilter",
-      "type": "object"
-    },
-    "TableConfig": {
-      "properties": {
-        "enable_sorting": {
-          "default": true,
-          "title": "Enable Sorting",
-          "type": "boolean"
-        },
-        "enable_filtering": {
-          "default": false,
-          "title": "Enable Filtering",
-          "type": "boolean"
-        },
-        "enable_download": {
-          "default": false,
-          "title": "Enable Download",
-          "type": "boolean"
-        },
-        "hide_header": {
-          "default": false,
-          "title": "Hide Header",
-          "type": "boolean"
-        }
-      },
-      "title": "TableConfig",
       "type": "object"
     },
     "EarthRangerSource": {
@@ -1965,29 +1675,6 @@
         "timezone"
       ]
     },
-    "events": {
-      "ui:order": [
-        "event_states",
-        "force_point_geometry"
-      ]
-    },
-    "Patrol and Event Types": {
-      "patrol_and_events_params": {
-        "ui:order": [
-          "status",
-          "event_states",
-          "patrols_overlap_daterange"
-        ]
-      }
-    },
-    "Trajectory Statistics": {
-      "trajectory_stats_table": {
-        "ui:order": [
-          "columns",
-          "table_config"
-        ]
-      }
-    },
     "Spatial Features": {
       "spatial_features": {
         "ui:order": [
@@ -2129,17 +1816,12 @@
       "time_range",
       "patrol_id",
       "get_template_path",
-      "events",
-      "Patrol and Event Types",
-      "",
-      "Trajectory Statistics",
       "Spatial Features",
       "Local Spatial Features",
       "Patrol Style",
       "Patrol Markers",
       "Event Style",
-      "download_attachments",
-      "Patrol & Events Report"
+      "download_attachments"
     ]
   },
   "additionalProperties": false

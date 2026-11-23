@@ -9,7 +9,7 @@ channels = [
 platforms = ['linux-64', 'osx-arm64', 'osx-64', 'win-64']
 
 [dependencies]
-wt-compiler = "==0.8.2"
+wt-compiler = ">=0.8.2,<0.11"
 graphviz = "*"
 python = "<3.15"
 

@@ -13,15 +13,9 @@ time_range:
   since: "2026-11-01T00:00:00.000Z"
   until: "2026-11-18T23:59:00.000Z"
 get_template_path:
-  var: /Users/zak/Desktop/templates/APN Patrol + Events.docx
+  var: https://raw.githubusercontent.com/wildlife-dynamics/APN-patrol_event/main/resources/templates/apn_patrol_events_template.docx
 patrol_id:
   var: "70"
-patrol_and_events_params:
-  status:
-    - done
-    - active
-    - overdue
-    - cancelled
 
 patrol_colormap:
   input_column_name: extra__patrol_type__display

@@ -6,7 +6,7 @@ requirements:
     channel: https://repo.prefix.dev/ecoscope-workflows/
 
   - name: ecoscope-workflows-ext-custom
-    version: "0.1.3"
+    version: "0.1.6"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
   - name: pydeck
@@ -14,14 +14,17 @@ requirements:
     channel: conda-forge
 
   - name: ecoscope-workflows-ext-apn
-    version: "0.0.31.dev1+g295c311f7.d20261118"
-    channel: file:///tmp/ecoscope-workflows-custom/release/artifacts/
+    version: "0.0.31"
+    channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
 rjsf-overrides:
   properties:
     patrol_id.properties.var.title: ID de Patrulla
     patrol_id.properties.var.description: "Número de serie de la patrulla en EarthRanger (por ejemplo 70)."
     get_template_path.properties.var.title: Template Path
+    get_template_path.properties.var.description: Path or URL to the .docx Jinja template used for the patrol report.
+    get_template_path.properties.var.default: "https://raw.githubusercontent.com/wildlife-dynamics/APN-patrol_event/main/resources/templates/apn_patrol_events_template.docx"
+    get_template_path.properties.var.ecoscope:advanced: true
     Patrol Style.properties.patrol_colormap.properties.input_column_name.title: Groupby
     Patrol Style.properties.patrol_colormap.properties.input_column_name.description: Color patrol tracks by the selected attribute. Each unique value is assigned a distinct color on the map.
     Patrol Style.properties.patrol_colormap.properties.input_column_name.default: extra__patrol_type__display
@@ -70,9 +73,6 @@ rjsf-overrides:
     Local Spatial Features.properties.local_spatial_file.properties.layer.default: ""
     Spatial Features.properties.spatial_features.properties.source.default:
       query: null
-    Trajectory Statistics.properties.trajectory_stats_table.properties.table_config.properties.enable_sorting.default: true
-    Trajectory Statistics.properties.trajectory_stats_table.properties.table_config.properties.enable_filtering.default: true
-    Trajectory Statistics.properties.trajectory_stats_table.properties.table_config.properties.enable_download.default: true
     Patrol Markers.properties.patrol_endpoint_layers.properties.include_markers.ecoscope:advanced: false
     Patrol Markers.properties.patrol_endpoint_layers.properties.include_markers.title: Include Start/End Markers
     Patrol Markers.properties.patrol_endpoint_layers.properties.include_markers.default: true
@@ -468,7 +468,7 @@ workflow:
     partial:
       time_range: ${{ workflow.time_range.return }}
 
-  - name: Specify Patrol ID
+  - name: ID de Patrulla
     id: patrol_id
     task: set_string_var
 
@@ -498,14 +498,8 @@ workflow:
       include_display_values: true
       include_related_events: false
       include_null_geometry: false
-
-  - id: convert_events_to_user_tz
-    task: convert_values_to_timezone
-    partial:
-      df: ${{ workflow.events.return }}
-      timezone: ${{ workflow.get_timezone.return }}
-      columns:
-        - time
+      event_states: null
+      force_point_geometry: true
 
   - title: Patrol and Event Types
     type: task-group
@@ -523,42 +517,50 @@ workflow:
           include_patrol_details: true
           truncate_to_time_range: true
           include_null_geometry: false
+          status: [done, active, overdue, cancelled]
+          event_states: null
+          patrols_overlap_daterange: true
 
+      # no patrol type selected = no type filter (core's [] means "active types only",
+      # which drops legs saved without a patrol type)
       - id: prefetch_patrols
-        task: get_patrols_from_combined_params
+        task: get_patrols_any_type
         partial:
           combined_params: ${{ workflow.patrol_and_events_params.return }}
 
-      # Scope everything downstream to the one ER patrol (serial number) chosen in the form
-      - id: prefetch_patrols_str
-        task: convert_column_values_to_string
-        partial:
-          df: ${{ workflow.prefetch_patrols.return }}
-          columns:
-            - serial_number
-
+      # Scope everything downstream to the ER patrol chosen in the form
       - name: Get Patrol by Serial Number
         id: patrol_f
-        task: filter_df
+        task: filter_patrols_by_serial
         partial:
-          df: ${{ workflow.prefetch_patrols_str.return }}
-          column_name: serial_number
-          op: equal
-          value: ${{ workflow.patrol_id.return }}
-          reset_index: false
+          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          patrol_id: ${{ workflow.patrol_id.return }}
 
-      # Patrol tasks downstream require serial_number as int64 again
-      - id: patrol_f_int
-        task: convert_column_values_to_numeric
+      # ER's events list hides retired (inactive) event types; fetch the patrol's own
+      # linked events it left out one by one (e.g. *_legacy types on older patrols)
+      - id: events_with_linked
+        task: add_missing_linked_events
+        skipif:
+          conditions:
+            - never
         partial:
-          df: ${{ workflow.patrol_f.return }}
+          client: ${{ workflow.er_client.return }}
+          patrols_df: ${{ workflow.patrol_f.return }}
+          events: ${{ workflow.events.return }}
+          event_types: []
+
+      - id: convert_events_to_user_tz
+        task: convert_values_to_timezone
+        partial:
+          df: ${{ workflow.events_with_linked.return }}
+          timezone: ${{ workflow.get_timezone.return }}
           columns:
-            - serial_number
+            - time
 
       - id: patrol_observations
         task: get_patrol_observations_from_patrols_df_and_combined_params
         partial:
-          patrols_df: ${{ workflow.patrol_f_int.return }}
+          patrols_df: ${{ workflow.patrol_f.return }}
           combined_params: ${{ workflow.patrol_and_events_params.return }}
 
       - id: convert_patrols_to_user_timezone
@@ -574,7 +576,7 @@ workflow:
       - id: patrol_events
         task: unpack_events_from_patrols_df_and_combined_params
         partial:
-          patrols_df: ${{ workflow.patrol_f_int.return }}
+          patrols_df: ${{ workflow.patrol_f.return }}
           combined_params: ${{ workflow.patrol_and_events_params.return }}
 
       - id: convert_events_to_user_timezone
@@ -616,9 +618,16 @@ workflow:
 
       - name: Patrol Trajectory
         id: patrol_trajectory
-        task: relocations_to_trajectory
+        task: trajectory_or_empty  # no usable track (1 fix / all filtered) -> empty, not a failed run
         partial:
           relocations: ${{ workflow.patrol_relocations.return }}
+          trajectory_segment_filter:
+            min_length_meters: 0.001
+            max_length_meters: 100000
+            min_time_secs: 1
+            max_time_secs: 172800
+            min_speed_kmhr: 0.01
+            max_speed_kmhr: 500
 
   - title: Trajectory Statistics
     type: task-group
@@ -681,6 +690,12 @@ workflow:
         task: draw_table
         partial:
           dataframe: ${{ workflow.trajectory_stats_local_times.return }}
+          columns: null
+          table_config:
+            enable_sorting: true
+            enable_filtering: false
+            enable_download: true
+            hide_header: false
 
       - id: trajectory_stats_table_html
         task: persist_text
@@ -702,26 +717,6 @@ workflow:
     type: task-group
     description: "Create single value widgets for various patrol statistics."
     tasks:
-      # Widget: Nro. de Patrullajes realizadas
-      - name: Calculate total Patrols
-        id: total_patrols
-        task: dataframe_column_nunique
-        partial:
-          df: ${{ workflow.patrol_trajectory.return }}
-          column_name: extra__patrol_id
-
-      - name: Create Single Value Widget for total Patrols
-        id: total_patrols_sv
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: "Nro. de Patrullajes realizadas"
-          decimal_places: 0
-          data: ${{ workflow.total_patrols.return }}
-
-      # Widget: Nro. de Kilómetros recorridos
       - name: Calculate Total Distance
         id: total_distance
         task: dataframe_column_sum
@@ -736,17 +731,6 @@ workflow:
           original_unit: m
           new_unit: km
           value: ${{ workflow.total_distance.return }}
-
-      - name: Create Single Value Widget for Total Distance
-        id: total_distance_sv
-        task: create_single_value_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: "Nro. de Kilómetros recorridos"
-          decimal_places: 2
-          data: ${{ workflow.total_distance_km.return }}
 
   - title: Process Event Details
     type: task-group
@@ -797,7 +781,7 @@ workflow:
             - never
         partial:
           client: ${{ workflow.er_client.return }}
-          patrols_df: ${{ workflow.patrol_f_int.return }}
+          patrols_df: ${{ workflow.patrol_f.return }}
           events_df: ${{ workflow.processed_events_details.return }}
           timezone: ${{ workflow.get_timezone.return }}
 
@@ -879,6 +863,93 @@ workflow:
         partial:
           df: ${{ workflow.safe_events_and_notes.return }}
           patrol_info: ${{ workflow.patrol_info.return }}
+          timezone: ${{ workflow.get_timezone.return }}
+
+  - title: Headline Stats
+    type: task-group
+    description: "Km, hours, legs and events: the same numbers as the report's stats row."
+    tasks:
+      - id: patrol_stats
+        task: get_patrol_stats
+        skipif:
+          conditions:
+            - never
+        partial:
+          patrol_info: ${{ workflow.patrol_info.return }}
+          total_distance: ${{ workflow.total_distance_km.return }}
+          events: ${{ workflow.processed_events_details.return }}
+
+      - id: stat_km
+        task: get_collection_item
+        partial:
+          collection: ${{ workflow.patrol_stats.return }}
+          key: km
+          default: 0
+          raise_on_missing: false
+
+      - id: stat_km_sv
+        task: create_single_value_widget_single_view
+        skipif:
+          conditions:
+            - never
+        partial:
+          title: "Km recorridos"
+          decimal_places: 2
+          data: ${{ workflow.stat_km.return }}
+
+      - id: stat_horas
+        task: get_collection_item
+        partial:
+          collection: ${{ workflow.patrol_stats.return }}
+          key: horas
+          default: 0
+          raise_on_missing: false
+
+      - id: stat_horas_sv
+        task: create_single_value_widget_single_view
+        skipif:
+          conditions:
+            - never
+        partial:
+          title: "Horas"
+          decimal_places: 2
+          data: ${{ workflow.stat_horas.return }}
+
+      - id: stat_tramos
+        task: get_collection_item
+        partial:
+          collection: ${{ workflow.patrol_stats.return }}
+          key: tramos
+          default: 0
+          raise_on_missing: false
+
+      - id: stat_tramos_sv
+        task: create_single_value_widget_single_view
+        skipif:
+          conditions:
+            - never
+        partial:
+          title: "Tramos"
+          decimal_places: 0
+          data: ${{ workflow.stat_tramos.return }}
+
+      - id: stat_eventos
+        task: get_collection_item
+        partial:
+          collection: ${{ workflow.patrol_stats.return }}
+          key: eventos
+          default: 0
+          raise_on_missing: false
+
+      - id: stat_eventos_sv
+        task: create_single_value_widget_single_view
+        skipif:
+          conditions:
+            - never
+        partial:
+          title: "Eventos"
+          decimal_places: 0
+          data: ${{ workflow.stat_eventos.return }}
 
   - title: Spatial Features
     type: task-group
@@ -1088,6 +1159,7 @@ workflow:
           template_path: ${{ workflow.norm_template_path.return }}
           output_dir: ${{ workflow.norm_output_dir.return }}
           mapa: ${{ workflow.patrol_event_map_to_png.return }}
+          include_attachment: true  # photos follow the form's "Skip Download" switch
 
   - name: Create Dashboard
     id: dashboard
@@ -1095,8 +1167,10 @@ workflow:
     partial:
       details: ${{ workflow.workflow_details.return }}
       widgets:
-        - ${{ workflow.total_patrols_sv.return }}
-        - ${{ workflow.total_distance_sv.return }}
+        - ${{ workflow.stat_km_sv.return }}
+        - ${{ workflow.stat_horas_sv.return }}
+        - ${{ workflow.stat_tramos_sv.return }}
+        - ${{ workflow.stat_eventos_sv.return }}
         - ${{ workflow.trajectory_stats_table_sv.return }}
         - ${{ workflow.patrol_event_map_widget.return }}
       time_range: ${{ workflow.time_range.return}}

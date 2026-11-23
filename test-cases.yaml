@@ -20,12 +20,6 @@ all-grouper:
       var: templates/individual_template.docx
     patrol_id:
       var: "26"
-    patrol_and_events_params:
-      status:
-        - done
-        - active
-        - overdue
-        - cancelled
     patrol_colormap:
       input_column_name: extra__patrol_type__display
       colormap: Set1

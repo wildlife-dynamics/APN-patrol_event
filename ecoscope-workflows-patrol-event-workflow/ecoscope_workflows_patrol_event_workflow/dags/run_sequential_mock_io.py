@@ -37,21 +37,19 @@ get_events = create_func_magicmock(  # 🧪
 from ecoscope.platform.tasks.io import (
     set_patrols_and_patrol_events_params as set_patrols_and_patrol_events_params,
 )
+from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
-
-get_patrols_from_combined_params = create_func_magicmock(  # 🧪
-    anchor="ecoscope.platform.tasks.io",  # 🧪
-    func_name="get_patrols_from_combined_params",  # 🧪
-)  # 🧪
-from ecoscope.platform.tasks.transformation import (
-    convert_column_values_to_numeric as convert_column_values_to_numeric,
+from ecoscope_workflows_ext_apn.tasks import (
+    add_missing_linked_events as add_missing_linked_events,
 )
-from ecoscope.platform.tasks.transformation import (
-    convert_column_values_to_string as convert_column_values_to_string,
+from ecoscope_workflows_ext_apn.tasks import (
+    filter_patrols_by_serial as filter_patrols_by_serial,
 )
-from ecoscope.platform.tasks.transformation import filter_df as filter_df
+from ecoscope_workflows_ext_apn.tasks import (
+    get_patrols_any_type as get_patrols_any_type,
+)
 
 get_patrol_observations_from_patrols_df_and_combined_params = (
     create_func_magicmock(  # 🧪
@@ -59,9 +57,6 @@ get_patrol_observations_from_patrols_df_and_combined_params = (
         func_name="get_patrol_observations_from_patrols_df_and_combined_params",  # 🧪
     )
 )  # 🧪
-from ecoscope.platform.tasks.analysis import (
-    dataframe_column_nunique as dataframe_column_nunique,
-)
 from ecoscope.platform.tasks.analysis import (
     dataframe_column_sum as dataframe_column_sum,
 )
@@ -73,20 +68,17 @@ from ecoscope.platform.tasks.io import (
 from ecoscope.platform.tasks.preprocessing import (
     process_relocations as process_relocations,
 )
-from ecoscope.platform.tasks.preprocessing import (
-    relocations_to_trajectory as relocations_to_trajectory,
-)
 from ecoscope.platform.tasks.results import (
     create_plot_widget_single_view as create_plot_widget_single_view,
 )
-from ecoscope.platform.tasks.results import (
-    create_single_value_widget_single_view as create_single_value_widget_single_view,
-)
 from ecoscope.platform.tasks.results import draw_table as draw_table
-from ecoscope.platform.tasks.skip import never as never
+from ecoscope.platform.tasks.transformation import (
+    convert_column_values_to_string as convert_column_values_to_string,
+)
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
 from ecoscope.platform.tasks.transformation import with_unit as with_unit
 from ecoscope_workflows_ext_apn.tasks import to_list as to_list
+from ecoscope_workflows_ext_apn.tasks import trajectory_or_empty as trajectory_or_empty
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     filter_row_values as filter_row_values,
 )
@@ -101,6 +93,9 @@ from ecoscope.platform.tasks.results import (
 from ecoscope.platform.tasks.results import create_path_layer as create_path_layer
 from ecoscope.platform.tasks.results import (
     create_scatterplot_layer as create_scatterplot_layer,
+)
+from ecoscope.platform.tasks.results import (
+    create_single_value_widget_single_view as create_single_value_widget_single_view,
 )
 from ecoscope.platform.tasks.results import draw_map as draw_map
 from ecoscope.platform.tasks.results import (
@@ -128,6 +123,7 @@ from ecoscope_workflows_ext_apn.tasks import get_eventnotes as get_eventnotes
 from ecoscope_workflows_ext_apn.tasks import (
     get_patrol_segments_info as get_patrol_segments_info,
 )
+from ecoscope_workflows_ext_apn.tasks import get_patrol_stats as get_patrol_stats
 from ecoscope_workflows_ext_apn.tasks import (
     map_event_category_display as map_event_category_display,
 )
@@ -143,6 +139,9 @@ from ecoscope_workflows_ext_custom.tasks.io import (
 )
 from ecoscope_workflows_ext_custom.tasks.results import (
     create_spatial_features_layer as create_spatial_features_layer,
+)
+from ecoscope_workflows_ext_custom.tasks.transformation import (
+    get_collection_item as get_collection_item,
 )
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     merge_two_dataframes as merge_two_dataframes,
@@ -361,29 +360,9 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             include_display_values=True,
             include_related_events=False,
             include_null_geometry=False,
+            event_states=None,
+            force_point_geometry=True,
             **(params.get("events") or {}),
-        )
-        .call()
-    )
-
-    convert_events_to_user_tz = (
-        task(convert_values_to_timezone)
-        .validate()
-        .set_task_instance_id("convert_events_to_user_tz")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=events,
-            timezone=get_timezone,
-            columns=["time"],
-            **(params.get("convert_events_to_user_tz") or {}),
         )
         .call()
     )
@@ -411,14 +390,17 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             include_patrol_details=True,
             truncate_to_time_range=True,
             include_null_geometry=False,
+            status=["done", "active", "overdue", "cancelled"],
+            event_states=None,
+            patrols_overlap_daterange=True,
             **(params.get("patrol_and_events_params") or {}),
         )
         .call()
     )
 
     prefetch_patrols = (
-        task(get_patrols_from_combined_params)
-        # 🧪 validation omitted for mocked IO task (returns pre-loaded example data)
+        task(get_patrols_any_type)
+        .validate()
         .set_task_instance_id("prefetch_patrols")
         .handle_errors()
         .with_tracing()
@@ -436,29 +418,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    prefetch_patrols_str = (
-        task(convert_column_values_to_string)
-        .validate()
-        .set_task_instance_id("prefetch_patrols_str")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=prefetch_patrols,
-            columns=["serial_number"],
-            **(params.get("prefetch_patrols_str") or {}),
-        )
-        .call()
-    )
-
     patrol_f = (
-        task(filter_df)
+        task(filter_patrols_by_serial)
         .validate()
         .set_task_instance_id("patrol_f")
         .handle_errors()
@@ -471,20 +432,39 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=prefetch_patrols_str,
-            column_name="serial_number",
-            op="equal",
-            value=patrol_id,
-            reset_index=False,
+            patrols_df=prefetch_patrols,
+            patrol_id=patrol_id,
             **(params.get("patrol_f") or {}),
         )
         .call()
     )
 
-    patrol_f_int = (
-        task(convert_column_values_to_numeric)
+    events_with_linked = (
+        task(add_missing_linked_events)
         .validate()
-        .set_task_instance_id("patrol_f_int")
+        .set_task_instance_id("events_with_linked")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            client=er_client,
+            patrols_df=patrol_f,
+            events=events,
+            event_types=[],
+            **(params.get("events_with_linked") or {}),
+        )
+        .call()
+    )
+
+    convert_events_to_user_tz = (
+        task(convert_values_to_timezone)
+        .validate()
+        .set_task_instance_id("convert_events_to_user_tz")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -495,7 +475,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=patrol_f, columns=["serial_number"], **(params.get("patrol_f_int") or {})
+            df=events_with_linked,
+            timezone=get_timezone,
+            columns=["time"],
+            **(params.get("convert_events_to_user_tz") or {}),
         )
         .call()
     )
@@ -514,7 +497,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            patrols_df=patrol_f_int,
+            patrols_df=patrol_f,
             combined_params=patrol_and_events_params,
             **(params.get("patrol_observations") or {}),
         )
@@ -557,7 +540,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            patrols_df=patrol_f_int,
+            patrols_df=patrol_f,
             combined_params=patrol_and_events_params,
             **(params.get("patrol_events") or {}),
         )
@@ -623,7 +606,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     patrol_trajectory = (
-        task(relocations_to_trajectory)
+        task(trajectory_or_empty)
         .validate()
         .set_task_instance_id("patrol_trajectory")
         .handle_errors()
@@ -636,7 +619,16 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            relocations=patrol_relocations, **(params.get("patrol_trajectory") or {})
+            relocations=patrol_relocations,
+            trajectory_segment_filter={
+                "min_length_meters": 0.001,
+                "max_length_meters": 100000,
+                "min_time_secs": 1,
+                "max_time_secs": 172800,
+                "min_speed_kmhr": 0.01,
+                "max_speed_kmhr": 500,
+            },
+            **(params.get("patrol_trajectory") or {}),
         )
         .call()
     )
@@ -760,6 +752,13 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             dataframe=trajectory_stats_local_times,
+            columns=None,
+            table_config={
+                "enable_sorting": True,
+                "enable_filtering": False,
+                "enable_download": True,
+                "hide_header": False,
+            },
             **(params.get("trajectory_stats_table") or {}),
         )
         .call()
@@ -807,48 +806,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    total_patrols = (
-        task(dataframe_column_nunique)
-        .validate()
-        .set_task_instance_id("total_patrols")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=patrol_trajectory,
-            column_name="extra__patrol_id",
-            **(params.get("total_patrols") or {}),
-        )
-        .call()
-    )
-
-    total_patrols_sv = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("total_patrols_sv")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title="Nro. de Patrullajes realizadas",
-            decimal_places=0,
-            data=total_patrols,
-            **(params.get("total_patrols_sv") or {}),
-        )
-        .call()
-    )
-
     total_distance = (
         task(dataframe_column_sum)
         .validate()
@@ -888,27 +845,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             new_unit="km",
             value=total_distance,
             **(params.get("total_distance_km") or {}),
-        )
-        .call()
-    )
-
-    total_distance_sv = (
-        task(create_single_value_widget_single_view)
-        .validate()
-        .set_task_instance_id("total_distance_sv")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title="Nro. de Kilómetros recorridos",
-            decimal_places=2,
-            data=total_distance_km,
-            **(params.get("total_distance_sv") or {}),
         )
         .call()
     )
@@ -1048,7 +984,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             client=er_client,
-            patrols_df=patrol_f_int,
+            patrols_df=patrol_f,
             events_df=processed_events_details,
             timezone=get_timezone,
             **(params.get("patrol_info") or {}),
@@ -1229,7 +1165,205 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             df=safe_events_and_notes,
             patrol_info=patrol_info,
+            timezone=get_timezone,
             **(params.get("report_context") or {}),
+        )
+        .call()
+    )
+
+    patrol_stats = (
+        task(get_patrol_stats)
+        .validate()
+        .set_task_instance_id("patrol_stats")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            patrol_info=patrol_info,
+            total_distance=total_distance_km,
+            events=processed_events_details,
+            **(params.get("patrol_stats") or {}),
+        )
+        .call()
+    )
+
+    stat_km = (
+        task(get_collection_item)
+        .validate()
+        .set_task_instance_id("stat_km")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            collection=patrol_stats,
+            key="km",
+            default=0,
+            raise_on_missing=False,
+            **(params.get("stat_km") or {}),
+        )
+        .call()
+    )
+
+    stat_km_sv = (
+        task(create_single_value_widget_single_view)
+        .validate()
+        .set_task_instance_id("stat_km_sv")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            title="Km recorridos",
+            decimal_places=2,
+            data=stat_km,
+            **(params.get("stat_km_sv") or {}),
+        )
+        .call()
+    )
+
+    stat_horas = (
+        task(get_collection_item)
+        .validate()
+        .set_task_instance_id("stat_horas")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            collection=patrol_stats,
+            key="horas",
+            default=0,
+            raise_on_missing=False,
+            **(params.get("stat_horas") or {}),
+        )
+        .call()
+    )
+
+    stat_horas_sv = (
+        task(create_single_value_widget_single_view)
+        .validate()
+        .set_task_instance_id("stat_horas_sv")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            title="Horas",
+            decimal_places=2,
+            data=stat_horas,
+            **(params.get("stat_horas_sv") or {}),
+        )
+        .call()
+    )
+
+    stat_tramos = (
+        task(get_collection_item)
+        .validate()
+        .set_task_instance_id("stat_tramos")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            collection=patrol_stats,
+            key="tramos",
+            default=0,
+            raise_on_missing=False,
+            **(params.get("stat_tramos") or {}),
+        )
+        .call()
+    )
+
+    stat_tramos_sv = (
+        task(create_single_value_widget_single_view)
+        .validate()
+        .set_task_instance_id("stat_tramos_sv")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            title="Tramos",
+            decimal_places=0,
+            data=stat_tramos,
+            **(params.get("stat_tramos_sv") or {}),
+        )
+        .call()
+    )
+
+    stat_eventos = (
+        task(get_collection_item)
+        .validate()
+        .set_task_instance_id("stat_eventos")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            collection=patrol_stats,
+            key="eventos",
+            default=0,
+            raise_on_missing=False,
+            **(params.get("stat_eventos") or {}),
+        )
+        .call()
+    )
+
+    stat_eventos_sv = (
+        task(create_single_value_widget_single_view)
+        .validate()
+        .set_task_instance_id("stat_eventos_sv")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            title="Eventos",
+            decimal_places=0,
+            data=stat_eventos,
+            **(params.get("stat_eventos_sv") or {}),
         )
         .call()
     )
@@ -1730,6 +1864,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             template_path=norm_template_path,
             output_dir=norm_output_dir,
             mapa=patrol_event_map_to_png,
+            include_attachment=True,
             **(params.get("generate_word_doc") or {}),
         )
         .call()
@@ -1751,8 +1886,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             details=workflow_details,
             widgets=[
-                total_patrols_sv,
-                total_distance_sv,
+                stat_km_sv,
+                stat_horas_sv,
+                stat_tramos_sv,
+                stat_eventos_sv,
                 trajectory_stats_table_sv,
                 patrol_event_map_widget,
             ],
