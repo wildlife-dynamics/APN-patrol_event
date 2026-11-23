@@ -1,8 +1,8 @@
 # APN Patrol & Event Report
 
-**One patrol in, one finished report out.** Pick a patrol recorded in EarthRanger, and this Ecoscope workflow builds an interactive dashboard and a Word report in the format used by Argentina's national parks agency, the Administración de Parques Nacionales (APN).
+This Ecoscope workflow creates a report for a single patrol recorded in EarthRanger. You enter the patrol's number, and it builds an interactive dashboard and a Word report in the format used by Argentina's national parks agency, the Administración de Parques Nacionales (APN).
 
-The report brings together everything the team recorded on that patrol: who went, each stretch of the route and how they travelled, what they found along the way, how the patrol ended, and a map of where they went. What used to be put together by hand after every patrol is ready in a couple of minutes.
+The report brings together everything the team recorded on that patrol: who went, each stretch of the route and how they travelled, what they found along the way, how the patrol ended, and a map of where they went.
 
 <p align="center">
   <img src="docs/images/how-it-works.svg" alt="How the report is made: set up the workflow in Ecoscope, it reads the patrol from EarthRanger, and produces a dashboard and a Word report" width="100%">
@@ -54,7 +54,7 @@ The four numbers at the top give the patrol at a glance. Below them, the legs ta
 ## The Word report
 
 <p align="center">
-  <img src="docs/images/word-report.svg" alt="The Word report page by page: patrol and team, legs and closing form, events by category, then map, notes and photos" width="100%">
+  <img src="docs/images/word-report.svg" alt="The Word report page by page: patrol and team, legs and closing form, events by category, then map and photos" width="100%">
 </p>
 
 The report reads like the paper form APN rangers know, filled in for them.
@@ -62,7 +62,7 @@ The report reads like the paper form APN rangers know, filled in for them.
 - **Patrol and team.** The patrol number, its mandates, when it started and ended, the same four numbers as the dashboard, and who took part: each leader with their team, plus anyone who joined without an EarthRanger account.
 - **Legs and closing.** The patrol leg by leg (how they travelled, when, who led, how far and how long), with everything filled in on each leg's form. The closing form follows on the same page, or a note that none was filed.
 - **Events.** A short summary by category, then a table for each category with every event's number, type, time, coordinates and details.
-- **Map, notes and photos.** The patrol map, the event notes (only when there are any), and the event photos.
+- **Map and photos.** The patrol map and the event photos.
 
 Times are in Buenos Aires time, and answers are written out in full words rather than EarthRanger's internal codes.
 
