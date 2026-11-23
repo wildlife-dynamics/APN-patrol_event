@@ -14,13 +14,16 @@ requirements:
     channel: conda-forge
 
   - name: ecoscope-workflows-ext-apn
-    version: "0.0.31"
+    version: "0.0.32"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
 rjsf-overrides:
   properties:
     patrol_id.properties.var.title: ID de Patrulla
     patrol_id.properties.var.description: "Número de serie de la patrulla en EarthRanger (por ejemplo 70)."
+    workflow_details.title: Workflow Details
+    base_maps.title: Base Maps
+    get_template_path.title: Report Template
     get_template_path.properties.var.title: Template Path
     get_template_path.properties.var.description: Path or URL to the .docx Jinja template used for the patrol report.
     get_template_path.properties.var.default: "https://raw.githubusercontent.com/wildlife-dynamics/APN-patrol_event/main/resources/templates/apn_patrol_events_template.docx"
@@ -384,6 +387,20 @@ rjsf-overrides:
             - $ref: "#/$defs/FeatureTypeQuery"
             - $ref: "#/$defs/FeatureIdQuery"
   uiSchema:
+    # form order: what to report, map look, report output, then rarely changed settings
+    ui:order:
+      - workflow_details
+      - er_client
+      - time_range
+      - patrol_id
+      - Spatial Features
+      - Local Spatial Features
+      - Patrol Style
+      - Patrol Markers
+      - Event Style
+      - download_attachments
+      - base_maps
+      - get_template_path
     Spatial Features.spatial_features.source:
       ui:options:
         label: false
@@ -677,42 +694,6 @@ workflow:
           drop_columns: null
           duplicate_strategy: suffix
 
-      # draw_table serializes datetimes as UTC; keep them as local-time text instead
-      - id: trajectory_stats_local_times
-        task: convert_column_values_to_string
-        partial:
-          df: ${{ workflow.renamed_trajectory_stats.return }}
-          columns:
-            - Inicio
-            - Fin
-
-      - id: trajectory_stats_table
-        task: draw_table
-        partial:
-          dataframe: ${{ workflow.trajectory_stats_local_times.return }}
-          columns: null
-          table_config:
-            enable_sorting: true
-            enable_filtering: false
-            enable_download: true
-            hide_header: false
-
-      - id: trajectory_stats_table_html
-        task: persist_text
-        partial:
-          text: ${{ workflow.trajectory_stats_table.return }}
-          root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-          filename_suffix: trajectory_stats_table
-
-      - id: trajectory_stats_table_sv
-        task: create_plot_widget_single_view
-        skipif:
-          conditions:
-            - never
-        partial:
-          title: "Resumen de Patrullas"
-          data: ${{ workflow.trajectory_stats_table_html.return }}
-
   - title: Patrol Summary Statistics Cards
     type: task-group
     description: "Create single value widgets for various patrol statistics."
@@ -887,15 +868,21 @@ workflow:
           default: 0
           raise_on_missing: false
 
+      - id: stat_km_unit
+        task: with_unit
+        partial:
+          value: ${{ workflow.stat_km.return }}
+          original_unit: km
+
       - id: stat_km_sv
         task: create_single_value_widget_single_view
         skipif:
           conditions:
             - never
         partial:
-          title: "Km recorridos"
+          title: "Distancia total"
           decimal_places: 2
-          data: ${{ workflow.stat_km.return }}
+          data: ${{ workflow.stat_km_unit.return }}
 
       - id: stat_horas
         task: get_collection_item
@@ -905,15 +892,21 @@ workflow:
           default: 0
           raise_on_missing: false
 
+      - id: stat_horas_unit
+        task: with_unit
+        partial:
+          value: ${{ workflow.stat_horas.return }}
+          original_unit: h
+
       - id: stat_horas_sv
         task: create_single_value_widget_single_view
         skipif:
           conditions:
             - never
         partial:
-          title: "Horas"
+          title: "Tiempo total"
           decimal_places: 2
-          data: ${{ workflow.stat_horas.return }}
+          data: ${{ workflow.stat_horas_unit.return }}
 
       - id: stat_tramos
         task: get_collection_item
@@ -950,6 +943,46 @@ workflow:
           title: "Eventos"
           decimal_places: 0
           data: ${{ workflow.stat_eventos.return }}
+
+  - title: Patrol Legs Table
+    type: task-group
+    description: "One row per patrol leg (type, start, end, leader, km, hours) for the dashboard."
+    tasks:
+      - id: patrol_legs_df
+        task: get_patrol_legs_table
+        skipif:
+          conditions:
+            - never
+        partial:
+          patrol_info: ${{ workflow.patrol_info.return }}
+          trajs: ${{ workflow.patrol_trajectory.return }}
+
+      - id: patrol_legs_table
+        task: draw_table
+        partial:
+          dataframe: ${{ workflow.patrol_legs_df.return }}
+          columns: null
+          table_config:
+            enable_sorting: true
+            enable_filtering: false
+            enable_download: true
+            hide_header: false
+
+      - id: patrol_legs_table_html
+        task: persist_text
+        partial:
+          text: ${{ workflow.patrol_legs_table.return }}
+          root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+          filename_suffix: patrol_legs_table
+
+      - id: patrol_legs_table_sv
+        task: create_plot_widget_single_view
+        skipif:
+          conditions:
+            - never
+        partial:
+          title: "Tramos de Patrulla"
+          data: ${{ workflow.patrol_legs_table_html.return }}
 
   - title: Spatial Features
     type: task-group
@@ -1171,6 +1204,6 @@ workflow:
         - ${{ workflow.stat_horas_sv.return }}
         - ${{ workflow.stat_tramos_sv.return }}
         - ${{ workflow.stat_eventos_sv.return }}
-        - ${{ workflow.trajectory_stats_table_sv.return }}
+        - ${{ workflow.patrol_legs_table_sv.return }}
         - ${{ workflow.patrol_event_map_widget.return }}
       time_range: ${{ workflow.time_range.return}}

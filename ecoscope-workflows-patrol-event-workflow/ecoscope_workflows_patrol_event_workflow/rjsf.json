@@ -18,7 +18,7 @@
       ],
       "type": "object",
       "description": "Add information that will help to differentiate this workflow from another.",
-      "title": "Set Workflow Details"
+      "title": "Workflow Details"
     },
     "er_client": {
       "additionalProperties": false,
@@ -226,7 +226,7 @@
       },
       "type": "object",
       "required": [],
-      "title": "Define Base Maps"
+      "title": "Base Maps"
     },
     "time_range": {
       "additionalProperties": false,
@@ -287,7 +287,42 @@
         "var"
       ],
       "type": "object",
-      "title": "Get Report Template Path"
+      "title": "Report Template"
+    },
+    "Headline Stats": {
+      "type": "object",
+      "description": "Km, hours, legs and events: the same numbers as the report's stats row.",
+      "ecoscope:task_group": true,
+      "properties": {
+        "stat_km_unit": {
+          "additionalProperties": false,
+          "properties": {
+            "new_unit": {
+              "$ref": "#/$defs/Unit",
+              "default": null,
+              "description": "The unit to convert to.",
+              "title": "New Unit"
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": ""
+        },
+        "stat_horas_unit": {
+          "additionalProperties": false,
+          "properties": {
+            "new_unit": {
+              "$ref": "#/$defs/Unit",
+              "default": null,
+              "description": "The unit to convert to.",
+              "title": "New Unit"
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": ""
+        }
+      }
     },
     "Spatial Features": {
       "type": "object",
@@ -1106,6 +1141,22 @@
       "title": "TimezoneInfo",
       "type": "object"
     },
+    "Unit": {
+      "enum": [
+        "m",
+        "km",
+        "m\u00b2",
+        "km\u00b2",
+        "s",
+        "h",
+        "d",
+        "m/s",
+        "km/h",
+        "%"
+      ],
+      "title": "Unit",
+      "type": "string"
+    },
     "EarthRangerSource": {
       "title": "EarthRanger",
       "type": "object",
@@ -1675,6 +1726,12 @@
         "timezone"
       ]
     },
+    "Headline Stats": {
+      "ui:order": [
+        "stat_km_unit",
+        "stat_horas_unit"
+      ]
+    },
     "Spatial Features": {
       "spatial_features": {
         "ui:order": [
@@ -1812,16 +1869,16 @@
     "ui:order": [
       "workflow_details",
       "er_client",
-      "base_maps",
       "time_range",
       "patrol_id",
-      "get_template_path",
       "Spatial Features",
       "Local Spatial Features",
       "Patrol Style",
       "Patrol Markers",
       "Event Style",
-      "download_attachments"
+      "download_attachments",
+      "base_maps",
+      "get_template_path"
     ]
   },
   "additionalProperties": false

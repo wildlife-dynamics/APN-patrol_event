@@ -61,19 +61,11 @@ from ecoscope.platform.tasks.analysis import (
     dataframe_column_sum as dataframe_column_sum,
 )
 from ecoscope.platform.tasks.analysis import summarize_df as summarize_df
-from ecoscope.platform.tasks.io import persist_text as persist_text
 from ecoscope.platform.tasks.io import (
     unpack_events_from_patrols_df_and_combined_params as unpack_events_from_patrols_df_and_combined_params,
 )
 from ecoscope.platform.tasks.preprocessing import (
     process_relocations as process_relocations,
-)
-from ecoscope.platform.tasks.results import (
-    create_plot_widget_single_view as create_plot_widget_single_view,
-)
-from ecoscope.platform.tasks.results import draw_table as draw_table
-from ecoscope.platform.tasks.transformation import (
-    convert_column_values_to_string as convert_column_values_to_string,
 )
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
 from ecoscope.platform.tasks.transformation import with_unit as with_unit
@@ -87,10 +79,14 @@ process_events_details = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="process_events_details",  # 🧪
 )  # 🧪
+from ecoscope.platform.tasks.io import persist_text as persist_text
 from ecoscope.platform.tasks.results import (
     create_map_widget_single_view as create_map_widget_single_view,
 )
 from ecoscope.platform.tasks.results import create_path_layer as create_path_layer
+from ecoscope.platform.tasks.results import (
+    create_plot_widget_single_view as create_plot_widget_single_view,
+)
 from ecoscope.platform.tasks.results import (
     create_scatterplot_layer as create_scatterplot_layer,
 )
@@ -98,6 +94,7 @@ from ecoscope.platform.tasks.results import (
     create_single_value_widget_single_view as create_single_value_widget_single_view,
 )
 from ecoscope.platform.tasks.results import draw_map as draw_map
+from ecoscope.platform.tasks.results import draw_table as draw_table
 from ecoscope.platform.tasks.results import (
     view_state_from_layers as view_state_from_layers,
 )
@@ -120,6 +117,9 @@ from ecoscope_workflows_ext_apn.tasks import (
     get_event_categories as get_event_categories,
 )
 from ecoscope_workflows_ext_apn.tasks import get_eventnotes as get_eventnotes
+from ecoscope_workflows_ext_apn.tasks import (
+    get_patrol_legs_table as get_patrol_legs_table,
+)
 from ecoscope_workflows_ext_apn.tasks import (
     get_patrol_segments_info as get_patrol_segments_info,
 )
@@ -716,96 +716,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    trajectory_stats_local_times = (
-        task(convert_column_values_to_string)
-        .validate()
-        .set_task_instance_id("trajectory_stats_local_times")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=renamed_trajectory_stats,
-            columns=["Inicio", "Fin"],
-            **(params.get("trajectory_stats_local_times") or {}),
-        )
-        .call()
-    )
-
-    trajectory_stats_table = (
-        task(draw_table)
-        .validate()
-        .set_task_instance_id("trajectory_stats_table")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            dataframe=trajectory_stats_local_times,
-            columns=None,
-            table_config={
-                "enable_sorting": True,
-                "enable_filtering": False,
-                "enable_download": True,
-                "hide_header": False,
-            },
-            **(params.get("trajectory_stats_table") or {}),
-        )
-        .call()
-    )
-
-    trajectory_stats_table_html = (
-        task(persist_text)
-        .validate()
-        .set_task_instance_id("trajectory_stats_table_html")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            text=trajectory_stats_table,
-            root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-            filename_suffix="trajectory_stats_table",
-            **(params.get("trajectory_stats_table_html") or {}),
-        )
-        .call()
-    )
-
-    trajectory_stats_table_sv = (
-        task(create_plot_widget_single_view)
-        .validate()
-        .set_task_instance_id("trajectory_stats_table_sv")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                never,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            title="Resumen de Patrullas",
-            data=trajectory_stats_table_html,
-            **(params.get("trajectory_stats_table_sv") or {}),
-        )
-        .call()
-    )
-
     total_distance = (
         task(dataframe_column_sum)
         .validate()
@@ -1215,6 +1125,25 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    stat_km_unit = (
+        task(with_unit)
+        .validate()
+        .set_task_instance_id("stat_km_unit")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            value=stat_km, original_unit="km", **(params.get("stat_km_unit") or {})
+        )
+        .call()
+    )
+
     stat_km_sv = (
         task(create_single_value_widget_single_view)
         .validate()
@@ -1228,9 +1157,9 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            title="Km recorridos",
+            title="Distancia total",
             decimal_places=2,
-            data=stat_km,
+            data=stat_km_unit,
             **(params.get("stat_km_sv") or {}),
         )
         .call()
@@ -1259,6 +1188,25 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    stat_horas_unit = (
+        task(with_unit)
+        .validate()
+        .set_task_instance_id("stat_horas_unit")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            value=stat_horas, original_unit="h", **(params.get("stat_horas_unit") or {})
+        )
+        .call()
+    )
+
     stat_horas_sv = (
         task(create_single_value_widget_single_view)
         .validate()
@@ -1272,9 +1220,9 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            title="Horas",
+            title="Tiempo total",
             decimal_places=2,
-            data=stat_horas,
+            data=stat_horas_unit,
             **(params.get("stat_horas_sv") or {}),
         )
         .call()
@@ -1364,6 +1312,95 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             decimal_places=0,
             data=stat_eventos,
             **(params.get("stat_eventos_sv") or {}),
+        )
+        .call()
+    )
+
+    patrol_legs_df = (
+        task(get_patrol_legs_table)
+        .validate()
+        .set_task_instance_id("patrol_legs_df")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            patrol_info=patrol_info,
+            trajs=patrol_trajectory,
+            **(params.get("patrol_legs_df") or {}),
+        )
+        .call()
+    )
+
+    patrol_legs_table = (
+        task(draw_table)
+        .validate()
+        .set_task_instance_id("patrol_legs_table")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            dataframe=patrol_legs_df,
+            columns=None,
+            table_config={
+                "enable_sorting": True,
+                "enable_filtering": False,
+                "enable_download": True,
+                "hide_header": False,
+            },
+            **(params.get("patrol_legs_table") or {}),
+        )
+        .call()
+    )
+
+    patrol_legs_table_html = (
+        task(persist_text)
+        .validate()
+        .set_task_instance_id("patrol_legs_table_html")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            text=patrol_legs_table,
+            root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
+            filename_suffix="patrol_legs_table",
+            **(params.get("patrol_legs_table_html") or {}),
+        )
+        .call()
+    )
+
+    patrol_legs_table_sv = (
+        task(create_plot_widget_single_view)
+        .validate()
+        .set_task_instance_id("patrol_legs_table_sv")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            title="Tramos de Patrulla",
+            data=patrol_legs_table_html,
+            **(params.get("patrol_legs_table_sv") or {}),
         )
         .call()
     )
@@ -1890,7 +1927,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 stat_horas_sv,
                 stat_tramos_sv,
                 stat_eventos_sv,
-                trajectory_stats_table_sv,
+                patrol_legs_table_sv,
                 patrol_event_map_widget,
             ],
             time_range=time_range,
