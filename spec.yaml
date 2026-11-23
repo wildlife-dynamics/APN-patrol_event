@@ -401,6 +401,7 @@ rjsf-overrides:
       - download_attachments
       - base_maps
       - get_template_path
+      - "*"  # anything new goes last instead of breaking the form
     Spatial Features.spatial_features.source:
       ui:options:
         label: false
@@ -873,6 +874,7 @@ workflow:
         partial:
           value: ${{ workflow.stat_km.return }}
           original_unit: km
+          new_unit: null  # pinned so it stays off the config page
 
       - id: stat_km_sv
         task: create_single_value_widget_single_view
@@ -897,6 +899,7 @@ workflow:
         partial:
           value: ${{ workflow.stat_horas.return }}
           original_unit: h
+          new_unit: null  # pinned so it stays off the config page
 
       - id: stat_horas_sv
         task: create_single_value_widget_single_view

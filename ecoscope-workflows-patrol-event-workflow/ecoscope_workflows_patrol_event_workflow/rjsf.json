@@ -289,41 +289,6 @@
       "type": "object",
       "title": "Report Template"
     },
-    "Headline Stats": {
-      "type": "object",
-      "description": "Km, hours, legs and events: the same numbers as the report's stats row.",
-      "ecoscope:task_group": true,
-      "properties": {
-        "stat_km_unit": {
-          "additionalProperties": false,
-          "properties": {
-            "new_unit": {
-              "$ref": "#/$defs/Unit",
-              "default": null,
-              "description": "The unit to convert to.",
-              "title": "New Unit"
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": ""
-        },
-        "stat_horas_unit": {
-          "additionalProperties": false,
-          "properties": {
-            "new_unit": {
-              "$ref": "#/$defs/Unit",
-              "default": null,
-              "description": "The unit to convert to.",
-              "title": "New Unit"
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": ""
-        }
-      }
-    },
     "Spatial Features": {
       "type": "object",
       "description": "Fetch spatial features from EarthRanger and render them as a map layer.",
@@ -1141,22 +1106,6 @@
       "title": "TimezoneInfo",
       "type": "object"
     },
-    "Unit": {
-      "enum": [
-        "m",
-        "km",
-        "m\u00b2",
-        "km\u00b2",
-        "s",
-        "h",
-        "d",
-        "m/s",
-        "km/h",
-        "%"
-      ],
-      "title": "Unit",
-      "type": "string"
-    },
     "EarthRangerSource": {
       "title": "EarthRanger",
       "type": "object",
@@ -1726,12 +1675,6 @@
         "timezone"
       ]
     },
-    "Headline Stats": {
-      "ui:order": [
-        "stat_km_unit",
-        "stat_horas_unit"
-      ]
-    },
     "Spatial Features": {
       "spatial_features": {
         "ui:order": [
@@ -1878,7 +1821,8 @@
       "Event Style",
       "download_attachments",
       "base_maps",
-      "get_template_path"
+      "get_template_path",
+      "*"
     ]
   },
   "additionalProperties": false
