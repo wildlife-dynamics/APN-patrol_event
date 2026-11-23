@@ -1,30 +1,111 @@
-# Patrol & Event Report
+# APN Patrol & Event Report
 
-Per-patrol report for Argentina's national parks agency (Administración de Parques Nacionales — APN). It pulls patrol and event data from EarthRanger over a time range, scopes it to one EarthRanger patrol (by its serial number), and produces both a dashboard summary and a downloadable Word (.docx) report for that patrol.
+An Ecoscope workflow for Argentina's national parks agency (Administración de Parques Nacionales, **APN**). Pick one EarthRanger patrol, and the workflow builds:
 
-## Dashboard widgets
+- a **dashboard** with the patrol's headline numbers, its legs and a map, and
+- a **Word report** (`.docx`) in APN's format, ready to print or share.
 
-| Widget | Description |
-|--------|-------------|
-| Nro. de Patrullajes realizadas | Count of distinct patrols in scope (1 when a patrol is selected) |
-| Nro. de Kilómetros recorridos | Total distance travelled along the patrol track, in km |
-| Resumen de Patrullas | Per-patrol table: Patrol ID, transport type, start/end time, total distance (km), total duration (hr) |
-| Mapa de Patrulla y Eventos | Map of the patrol track and its linked events, plus any configured spatial-feature layers (e.g. park boundaries), colored by the selected groupby attribute for each |
+APN records patrol information on the patrol itself (EarthRanger patrol **legs**, also called segments), so the report reads the leaders, members, mandates and per-leg details from the patrol, and the events linked to it.
 
-This workflow has no groupers — the dashboard shows a single view scoped to the selected patrol and time range.
+---
+
+## Running it
+
+The config page asks for, in order:
+
+| Section | What to set |
+|---|---|
+| Workflow Details | Name and description shown on the dashboard |
+| Data Source | The EarthRanger connection (e.g. `apncentral`) |
+| Time Range | A range that covers the patrol, and the timezone (Buenos Aires) |
+| **ID de Patrulla** | The patrol's serial number in EarthRanger, e.g. `74`. Required. |
+| Spatial Features / Local Spatial Features | Optional map layers such as park boundaries |
+| Patrol Style / Patrol Markers / Event Style | Map colors, legends and markers |
+| Download Attachments | Include event photos in the report, or skip them |
+| Base Maps *(advanced)* | Map background tiles |
+| Report Template *(advanced)* | Path or URL of the `.docx` template. Defaults to the template in this repo, so leave it as is unless you are testing a new one. |
+
+If no patrol with that ID falls inside the time range, the run stops with *"No patrol matches the 'ID de Patrulla' in the selected time range"*. Widen the time range or check the ID.
+
+---
+
+## Dashboard
+
+| Widget | Shows |
+|---|---|
+| **Distancia total** | Kilometres of GPS track, e.g. `4.05 km` |
+| **Tiempo total** | Hours on patrol, summed over the legs, e.g. `0.44 h` |
+| **Tramos** | Number of legs |
+| **Eventos** | Number of events linked to the patrol |
+| **Tramos de Patrulla** | One row per leg: #, type, start, end, leader, distance (km), time (h) |
+| **Mapa de Patrulla y Eventos** | The track colored by leg type, the events, and any spatial features |
+
+The tiles use the same numbers as the report's stats row.
 
 ## Word report
 
-Beyond the dashboard, this workflow generates a `.docx` report (via `generate_patrol_report`) combining the patrol map (as a static PNG), trajectory statistics, event details, event notes, and event attachments, using a Jinja/docxtpl template supplied via the "Template Path" parameter (`get_template_path`). The template path is a local file path (or `file://` URL) resolved on the machine running the workflow — it is not stored in this repository.
+| Page | Section |
+|---|---|
+| 1 | Header (patrol ID, mandates, start and end), stats row, **Personal Participante**: one row per leader, with members and unlisted staff |
+| 2 | **Tramos de Patrulla**: one row per leg with date and schedule, leader, distance, time and the leg's form details. **Cierre de Patrulla**: the closing report, if one was filed |
+| 3+ | **Eventos**: a summary by category, then one table per category (ID, type, time, coordinates, details) |
+| … | **Mapa de Patrulla y Eventos**, **Notas** (only when there are notes) and **Imágenes** (event photos) |
 
-## Scoping to a patrol
+Dates and times are shown in the workflow timezone. Choice codes from EarthRanger forms are shown as their labels.
 
-The "ID de Patrulla" parameter (`patrol_id`) is the EarthRanger patrol serial number. The patrols fetched for the time range are filtered to that one patrol; its track, its linked events (through the patrol's legs) and everything downstream (map, stats, report) are scoped to it.
+### Changing the template
 
-## Patrol header (legs)
+The template lives at [`resources/templates/apn_patrol_events_template.docx`](resources/templates/apn_patrol_events_template.docx), and the Report Template field defaults to its raw GitHub URL on `main`. To change the report layout, edit that file (it uses [docxtpl](https://docxtpl.readthedocs.io) Jinja tags), test it locally by pointing Report Template at your copy, then merge it to `main`. No recompile is needed for template-only changes.
 
-APN records patrol information on the patrol itself, using EarthRanger's patrol segments configuration, instead of on an "Información inicial de patrulla" event. `get_patrol_segments_info` (ext-apn) builds the report header from the patrol: one entry per leg with transport type, start/end time (in the workflow timezone), leader, member names, and the leg's form fields — `segment_details` (mandate, project, protection activity, armed) and `type_details` (per patrol type: vehicle plate and starting km, boat and engine hours, horse) — with choice codes resolved to labels. If the patrol has a linked `cierre_de_patrulla` event, its end-of-patrol fields are added too. A patrol with no linked events still produces the map, stats and report.
+---
 
-## Requirements
+## Where the data comes from
 
-[pixi](https://pixi.sh) is required for environment and dependency management. You will also need an EarthRanger connection configured for the `apn` data source.
+| Report part | EarthRanger source |
+|---|---|
+| Patrol ID, start and end | The patrol (`serial_number`) and its legs' time ranges |
+| Leaders and members | Each leg's leader and members |
+| Mandates and leg details | Leg form fields (`segment_details`, plus `type_details` for the leg type: vehicle, boat, horse, …) |
+| Distance per leg | GPS track segments that start within the leg's time range |
+| Events | Events linked to the patrol's legs, including ones whose event type is now inactive |
+| Cierre de Patrulla | A linked `cierre_de_patrulla` event, if any |
+
+A patrol without a GPS track still gets a report, without distances or a map.
+
+The tasks behind this live in [`ecoscope-workflows-ext-apn`](https://github.com/wildlife-dynamics/APN) (`get_patrol_segments_info`, `get_patrol_stats`, `get_patrol_legs_table`, `prepare_patrol_report_context`, `generate_patrol_report`).
+
+---
+
+## Development
+
+Requires [pixi](https://pixi.sh) and an EarthRanger connection for the data source you test against.
+
+**Edit** `spec.yaml` (tasks, form overrides, dependency versions) and `layout.json` (dashboard layout). Don't edit the generated `ecoscope-workflows-patrol-event-workflow/` folder by hand.
+
+**Compile** after changing the spec or a dependency version:
+
+```bash
+./dev/recompile.sh --update
+```
+
+`--update` keeps the existing lockfile and bumps the workflow version.
+
+**Run** locally against real data (`param.yaml` holds example parameters):
+
+```bash
+cd ecoscope-workflows-patrol-event-workflow
+ECOSCOPE_WORKFLOWS_RESULTS="file:///tmp/apn-patrol-event" \
+  pixi run ecoscope-workflows-patrol-event-workflow run \
+  --config-file ../param.yaml --execution-mode sequential --no-mock-io
+```
+
+The dashboard data goes to `result.json` and the report to `*_Patrol_Report_<ID>.docx` in the results folder.
+
+### Dependency versions
+
+| Package | Version | Why |
+|---|---|---|
+| `ecoscope-workflows-ext-apn` | pinned | APN tasks; bump it after each ext-apn release |
+| `ecoscope-workflows-ext-custom` | pinned | Shared tasks (attachments, remote template download) |
+| `ecoscope-platform` | range | The solver picks the newest version compatible with ext-custom |
+| `wt-compiler` (in `pixi.toml`) | `>=0.8.2,<0.11` | wt-compiler 0.11 requires `wt-task >=0.3`, which ext-custom doesn't support yet. Lift the cap once it does. |
