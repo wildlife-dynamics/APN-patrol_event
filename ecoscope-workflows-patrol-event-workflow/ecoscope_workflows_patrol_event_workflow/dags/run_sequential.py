@@ -1112,7 +1112,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            value=stat_km, original_unit="km", **(params.get("stat_km_unit") or {})
+            value=stat_km,
+            original_unit="km",
+            new_unit=None,
+            **(params.get("stat_km_unit") or {}),
         )
         .call()
     )
@@ -1175,7 +1178,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            value=stat_horas, original_unit="h", **(params.get("stat_horas_unit") or {})
+            value=stat_horas,
+            original_unit="h",
+            new_unit=None,
+            **(params.get("stat_horas_unit") or {}),
         )
         .call()
     )

@@ -285,34 +285,6 @@
       "type": "object",
       "title": "Get Report Template Path"
     },
-    "stat_km_unit": {
-      "additionalProperties": false,
-      "properties": {
-        "new_unit": {
-          "$ref": "#/$defs/Unit",
-          "default": null,
-          "description": "The unit to convert to.",
-          "title": "New Unit"
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": ""
-    },
-    "stat_horas_unit": {
-      "additionalProperties": false,
-      "properties": {
-        "new_unit": {
-          "$ref": "#/$defs/Unit",
-          "default": null,
-          "description": "The unit to convert to.",
-          "title": "New Unit"
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": ""
-    },
     "spatial_features": {
       "additionalProperties": false,
       "properties": {
@@ -723,22 +695,6 @@
       ],
       "title": "TimezoneInfo",
       "type": "object"
-    },
-    "Unit": {
-      "enum": [
-        "m",
-        "km",
-        "m\u00b2",
-        "km\u00b2",
-        "s",
-        "h",
-        "d",
-        "m/s",
-        "km/h",
-        "%"
-      ],
-      "title": "Unit",
-      "type": "string"
     },
     "EarthRangerSource": {
       "properties": {
@@ -1380,8 +1336,6 @@
       "time_range",
       "patrol_id",
       "get_template_path",
-      "stat_km_unit",
-      "stat_horas_unit",
       "spatial_features",
       "local_spatial_file",
       "patrol_colormap",
