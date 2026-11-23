@@ -3,25 +3,19 @@ workflow_details:
   name: Patrol & Event Report
 er_client:
   data_source:
-    name: apn
+    name: apncentral
 time_range:
   timezone:
-    label: Africa/Nairobi
-    tzCode: EAT
-    name: Nairobi
-    utc: +03:00
-  since: "2026-03-01T07:57:00.000Z"
-  until: "2026-04-01T07:58:00.000Z"
+    label: America/Argentina/Buenos_Aires
+    tzCode: ART
+    name: Buenos Aires
+    utc: "-03:00"
+  since: "2026-11-01T00:00:00.000Z"
+  until: "2026-11-18T23:59:00.000Z"
 get_template_path:
-  var: /Users/zak/Desktop/templates/APN Patrol + Events.docx
-outing_id:
-  var: "123"
-patrol_and_events_params:
-  status:
-    - done
-    - active
-    - overdue
-    - cancelled
+  var: https://raw.githubusercontent.com/wildlife-dynamics/APN-patrol_event/main/resources/templates/apn_patrol_events_template.docx
+patrol_id:
+  var: "70"
 
 patrol_colormap:
   input_column_name: extra__patrol_type__display

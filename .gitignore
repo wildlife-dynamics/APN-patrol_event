@@ -226,3 +226,7 @@ Makefile.local
 ~$*
 .tmp
 .DS_Store
+
+# local dev overrides (make dev)
+wt-compiler-env-overrides.toml
+.pixi-workflow-keep
