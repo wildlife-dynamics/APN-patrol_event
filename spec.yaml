@@ -1197,6 +1197,13 @@ workflow:
           mapa: ${{ workflow.patrol_event_map_to_png.return }}
           include_attachment: true  # photos follow the form's "Skip Download" switch
 
+  - name: Report files
+    id: report_files
+    task: create_files_single_view
+    partial:
+      files:
+        - ${{ workflow.generate_word_doc.return }}
+
   - name: Create Dashboard
     id: dashboard
     task: gather_dashboard
@@ -1210,3 +1217,4 @@ workflow:
         - ${{ workflow.patrol_legs_table_sv.return }}
         - ${{ workflow.patrol_event_map_widget.return }}
       time_range: ${{ workflow.time_range.return}}
+      files: ${{ workflow.report_files.return }}
