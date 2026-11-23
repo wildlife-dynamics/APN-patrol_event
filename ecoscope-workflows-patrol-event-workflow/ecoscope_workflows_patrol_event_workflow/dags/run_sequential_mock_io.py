@@ -159,6 +159,9 @@ sanitize_attachments = create_func_magicmock(  # 🧪
     anchor="ecoscope_workflows_ext_custom.tasks.io",  # 🧪
     func_name="sanitize_attachments",  # 🧪
 )  # 🧪
+from ecoscope.platform.tasks.results import (
+    create_files_single_view as create_files_single_view,
+)
 from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope_workflows_ext_apn.tasks import (
     generate_patrol_report as generate_patrol_report,
@@ -1913,6 +1916,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    report_files = (
+        task(create_files_single_view)
+        .validate()
+        .set_task_instance_id("report_files")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(files=[generate_word_doc], **(params.get("report_files") or {}))
+        .call()
+    )
+
     dashboard = (
         task(gather_dashboard)
         .validate()
@@ -1937,6 +1957,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 patrol_event_map_widget,
             ],
             time_range=time_range,
+            files=report_files,
             **(params.get("dashboard") or {}),
         )
         .call()
