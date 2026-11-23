@@ -35,25 +35,12 @@ Never edit the generated `ecoscope-workflows-patrol-event-workflow/` folder by h
 
 ## How a run works
 
-When someone presses Run, the workflow goes through five stages:
+```mermaid
+flowchart LR
+    a["Settings"] --> b["Fetch the patrol<br/>GPS track + linked events"] --> c["Legs, labels,<br/>distance and time"] --> d["Dashboard +<br/>Word report"]
+```
 
-1. **Read the settings:** data source, time range, patrol number and template.
-2. **Fetch the patrol.** It gets all patrols in the time range, keeps the one with the matching serial number, then fetches that patrol's GPS track and linked events. Events whose type was later deactivated aren't returned with the patrol, so they're fetched one by one.
-3. **Work out the patrol details.** It reads the legs (leader, team, leg form, closing form), turns form codes into readable labels, groups the events by category, and calculates distance and time.
-4. **Build the outputs:** the four headline numbers, the legs table, the map, and the Word report.
-5. **Assemble the dashboard**, with the Word report listed in its files.
-
-If something an output depends on is missing, for example a patrol with no GPS track, that output is skipped and the rest still runs.
-
-### Where the patrol data comes from
-
-| In the report | From EarthRanger |
-|---|---|
-| Legs, leaders and teams | The patrol's segments (legs) |
-| Mandate, vehicle, horse… | Each leg's form fields |
-| Distance per leg | The parts of the GPS track recorded during that leg |
-| Events | The events linked to the legs |
-| Closing form | A linked `cierre_de_patrulla` event |
+Outputs that depend on missing data are skipped, so a patrol with no GPS track still gets a report, just without distances or a map.
 
 ---
 
