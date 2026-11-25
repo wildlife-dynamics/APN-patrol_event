@@ -21,6 +21,14 @@ rjsf-overrides:
   properties:
     patrol_id.properties.var.title: ID de Patrulla
     patrol_id.properties.var.description: "Número de serie de la patrulla en EarthRanger (por ejemplo 70)."
+    Data Export.properties.export_patrol_tracks.properties.filetypes.title: Patrol Tracks File Formats
+    Data Export.properties.export_patrol_tracks.properties.filetypes.description: File formats for the patrol tracks shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.
+    Data Export.properties.export_patrol_tracks.properties.filetypes.default:
+      - geoparquet
+    Data Export.properties.export_patrol_events.properties.filetypes.title: Event File Formats
+    Data Export.properties.export_patrol_events.properties.filetypes.description: File formats for the patrol's events shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.
+    Data Export.properties.export_patrol_events.properties.filetypes.default:
+      - geoparquet
     workflow_details.title: Workflow Details
     base_maps.title: Base Maps
     get_template_path.title: Report Template
@@ -399,6 +407,7 @@ rjsf-overrides:
       - Patrol Markers
       - Event Style
       - download_attachments
+      - Data Export
       - base_maps
       - get_template_path
       - "*"  # anything new goes last instead of breaking the form
@@ -1143,6 +1152,27 @@ workflow:
         partial:
           title: "Mapa de Patrulla y Eventos"
           data: ${{ workflow.persist_patrol_map.return }}
+
+  # Same data as the map, as files for GIS (QGIS/ArcGIS) or further analysis
+  - title: Data Export
+    type: task-group
+    description: ""
+    tasks:
+      - id: export_patrol_tracks
+        task: persist_df_wrapper
+        partial:
+          df: ${{ workflow.patrol_trajectory.return }}
+          root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+          filename_prefix: patrol_tracks
+          sanitize: true
+
+      - id: export_patrol_events
+        task: persist_df_wrapper
+        partial:
+          df: ${{ workflow.mapped_events.return }}
+          root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+          filename_prefix: patrol_events
+          sanitize: true  # event_details is a dict column; parquet needs it as JSON text
 
   # Events Attachments
   - name: Download Attachments
