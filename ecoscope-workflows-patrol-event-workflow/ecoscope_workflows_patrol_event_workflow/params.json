@@ -632,6 +632,58 @@
       "required": [],
       "title": ""
     },
+    "export_patrol_tracks": {
+      "additionalProperties": false,
+      "properties": {
+        "filetypes": {
+          "default": [
+            "csv"
+          ],
+          "description": "The output format",
+          "items": {
+            "enum": [
+              "csv",
+              "gpkg",
+              "geoparquet",
+              "parquet"
+            ],
+            "type": "string"
+          },
+          "title": "Filetypes",
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": ""
+    },
+    "export_patrol_events": {
+      "additionalProperties": false,
+      "properties": {
+        "filetypes": {
+          "default": [
+            "csv"
+          ],
+          "description": "The output format",
+          "items": {
+            "enum": [
+              "csv",
+              "gpkg",
+              "geoparquet",
+              "parquet"
+            ],
+            "type": "string"
+          },
+          "title": "Filetypes",
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": ""
+    },
     "download_attachments": {
       "additionalProperties": false,
       "properties": {
@@ -1345,6 +1397,8 @@
       "event_colormap",
       "event_legend_title",
       "event_layer",
+      "export_patrol_tracks",
+      "export_patrol_events",
       "download_attachments"
     ]
   },

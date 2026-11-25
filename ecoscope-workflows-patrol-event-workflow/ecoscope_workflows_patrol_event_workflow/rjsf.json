@@ -1042,6 +1042,65 @@
         }
       }
     },
+    "Data Export": {
+      "type": "object",
+      "description": "",
+      "ecoscope:task_group": true,
+      "properties": {
+        "export_patrol_tracks": {
+          "additionalProperties": false,
+          "properties": {
+            "filetypes": {
+              "default": [
+                "geoparquet"
+              ],
+              "description": "File formats for the patrol tracks shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.",
+              "items": {
+                "enum": [
+                  "csv",
+                  "gpkg",
+                  "geoparquet",
+                  "parquet"
+                ],
+                "type": "string"
+              },
+              "title": "Patrol Tracks File Formats",
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": ""
+        },
+        "export_patrol_events": {
+          "additionalProperties": false,
+          "properties": {
+            "filetypes": {
+              "default": [
+                "geoparquet"
+              ],
+              "description": "File formats for the patrol's events shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.",
+              "items": {
+                "enum": [
+                  "csv",
+                  "gpkg",
+                  "geoparquet",
+                  "parquet"
+                ],
+                "type": "string"
+              },
+              "title": "Event File Formats",
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": ""
+        }
+      }
+    },
     "download_attachments": {
       "additionalProperties": false,
       "properties": {
@@ -1803,6 +1862,12 @@
         }
       }
     },
+    "Data Export": {
+      "ui:order": [
+        "export_patrol_tracks",
+        "export_patrol_events"
+      ]
+    },
     "download_attachments": {
       "ui:order": [
         "attachments_subdir",
@@ -1820,6 +1885,7 @@
       "Patrol Markers",
       "Event Style",
       "download_attachments",
+      "Data Export",
       "base_maps",
       "get_template_path",
       "*"
