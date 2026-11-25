@@ -1057,10 +1057,9 @@
               "description": "File formats for the patrol tracks shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.",
               "items": {
                 "enum": [
-                  "csv",
-                  "gpkg",
                   "geoparquet",
-                  "parquet"
+                  "gpkg",
+                  "csv"
                 ],
                 "type": "string"
               },
@@ -1083,10 +1082,9 @@
               "description": "File formats for the patrol's events shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.",
               "items": {
                 "enum": [
-                  "csv",
-                  "gpkg",
                   "geoparquet",
-                  "parquet"
+                  "gpkg",
+                  "csv"
                 ],
                 "type": "string"
               },

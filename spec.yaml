@@ -25,10 +25,12 @@ rjsf-overrides:
     Data Export.properties.export_patrol_tracks.properties.filetypes.description: File formats for the patrol tracks shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.
     Data Export.properties.export_patrol_tracks.properties.filetypes.default:
       - geoparquet
+    Data Export.properties.export_patrol_tracks.properties.filetypes.items.enum: [geoparquet, gpkg, csv]  # plain parquet = same file as geoparquet here
     Data Export.properties.export_patrol_events.properties.filetypes.title: Event File Formats
     Data Export.properties.export_patrol_events.properties.filetypes.description: File formats for the patrol's events shown on the map. Pick one or more; GeoParquet and GeoPackage open in QGIS/ArcGIS.
     Data Export.properties.export_patrol_events.properties.filetypes.default:
       - geoparquet
+    Data Export.properties.export_patrol_events.properties.filetypes.items.enum: [geoparquet, gpkg, csv]  # plain parquet = same file as geoparquet here
     workflow_details.title: Workflow Details
     base_maps.title: Base Maps
     get_template_path.title: Report Template
@@ -1234,6 +1236,24 @@ workflow:
       files:
         - ${{ workflow.generate_word_doc.return }}
 
+  # The desktop's Files tab lists only files declared here, not the rest of the results folder.
+  # skipif never: a skipped export (no track / no events) becomes an empty list, not a skipped dashboard.
+  - id: patrol_tracks_files
+    task: create_files_single_view
+    skipif:
+      conditions:
+        - never
+    partial:
+      files: ${{ workflow.export_patrol_tracks.return }}
+
+  - id: patrol_events_files
+    task: create_files_single_view
+    skipif:
+      conditions:
+        - never
+    partial:
+      files: ${{ workflow.export_patrol_events.return }}
+
   - name: Create Dashboard
     id: dashboard
     task: gather_dashboard
@@ -1247,4 +1267,7 @@ workflow:
         - ${{ workflow.patrol_legs_table_sv.return }}
         - ${{ workflow.patrol_event_map_widget.return }}
       time_range: ${{ workflow.time_range.return}}
-      files: ${{ workflow.report_files.return }}
+      files:
+        - ${{ workflow.report_files.return }}
+        - ${{ workflow.patrol_tracks_files.return }}
+        - ${{ workflow.patrol_events_files.return }}

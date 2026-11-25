@@ -38,7 +38,7 @@ The report can only show what was recorded: a leg with an empty form, or a patro
   <img src="docs/images/dashboard.svg" alt="The dashboard: four headline numbers, a table of legs and a map of the route with the events" width="100%">
 </p>
 
-The four numbers at the top give the patrol at a glance. Below them, the legs table shows how the patrol unfolded, and the map shows where it went and where each event was recorded. The Word report is in the dashboard's files, ready to download, next to the map's data: the patrol tracks and the events as GIS files (GeoParquet by default; choose GeoPackage, CSV or Parquet under **Data Export**).
+The four numbers at the top give the patrol at a glance. Below them, the legs table shows how the patrol unfolded, and the map shows where it went and where each event was recorded. The Word report is in the dashboard's files, ready to download, next to the map's data: the patrol tracks and the events as GIS files (GeoParquet by default; choose GeoPackage or CSV under **Data Export**). They are listed in the **Files** tab.
 
 | On the dashboard | In English | What it shows |
 |---|---|---|

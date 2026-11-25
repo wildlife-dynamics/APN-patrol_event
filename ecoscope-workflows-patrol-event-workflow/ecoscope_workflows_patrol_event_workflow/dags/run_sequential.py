@@ -1953,6 +1953,42 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    patrol_tracks_files = (
+        task(create_files_single_view)
+        .validate()
+        .set_task_instance_id("patrol_tracks_files")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            files=export_patrol_tracks, **(params.get("patrol_tracks_files") or {})
+        )
+        .call()
+    )
+
+    patrol_events_files = (
+        task(create_files_single_view)
+        .validate()
+        .set_task_instance_id("patrol_events_files")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            files=export_patrol_events, **(params.get("patrol_events_files") or {})
+        )
+        .call()
+    )
+
     dashboard = (
         task(gather_dashboard)
         .validate()
@@ -1977,7 +2013,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 patrol_event_map_widget,
             ],
             time_range=time_range,
-            files=report_files,
+            files=[report_files, patrol_tracks_files, patrol_events_files],
             **(params.get("dashboard") or {}),
         )
         .call()
